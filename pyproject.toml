@@ -52,10 +52,6 @@ dbt-build = "aida_challenge.dbt_commands:dbt_build"
 dbt-clean = "aida_challenge.dbt_commands:dbt_clean"
 dbt-docs-generate = "aida_challenge.dbt_commands:dbt_docs_generate"
 dbt-docs-serve = "aida_challenge.dbt_commands:dbt_docs_serve"
-dbt-run-staging = "aida_challenge.dbt_commands:dbt_run_staging"
-dbt-run-intermediate = "aida_challenge.dbt_commands:dbt_run_intermediate"
-dbt-run-marts = "aida_challenge.dbt_commands:dbt_run_marts"
-dbt-test-sources = "aida_challenge.dbt_commands:dbt_test_sources"
 
 [tool.uv]
 dev-dependencies = []

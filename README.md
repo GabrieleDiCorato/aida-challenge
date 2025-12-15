@@ -4,14 +4,14 @@ A data analytics project for exploring and extracting insights from insurance co
 
 ## Project Overview
 
-This repository contains exploratory data analysis and analytics pipelines for an insurance company dataset. The project leverages:
+This project contains analytics pipelines for an insurance dataset, leveraging:
 
-- **DuckDB** for efficient analytical queries on CSV data
+- **DuckDB** for efficient analytical queries
 - **dbt** for data transformation and modeling
 - **UV** for fast Python dependency management
 - **Jupyter** for exploratory data analysis
 
-The goal is to explore the data, identify valuable insights, and build reproducible analytics pipelines as a proof of concept.
+The goal is to explore data, identify insights, and build reproducible pipelines.
 
 ## Quick Start
 
@@ -22,33 +22,18 @@ The goal is to explore the data, identify valuable insights, and build reproduci
 
 ### Installation
 
-#### Option 1: One-Command Setup (Recommended)
-```bash
-# Copy the example profiles file and edit with your setup
-cp dbt_project/profiles.yml.example dbt_project/profiles.yml
-
-# Initialize project
-make init
-```
-This will install dependencies, setup dbt, load data, and run the complete dbt pipeline.
-
-#### Option 2: Step-by-Step Setup
 ```bash
 # 1. Copy and configure dbt profiles
 cp dbt_project/profiles.yml.example dbt_project/profiles.yml
-# Edit profiles.yml if needed (default uses relative paths)
 
 # 2. Install dependencies
-make install-all
+uv sync --all-extras
 
-# 3. Setup dbt
-make dbt-setup
+# 3. Load data into DuckDB
+uv run load-raw-data
 
-# 4. Load data into DuckDB
-make load-data
-
-# 5. Run dbt transformations
-make dbt-pipeline
+# 4. Run dbt transformations
+uv run dbt-build
 ```
 
 #### Alternative: Standard dbt Profiles Location
@@ -65,10 +50,7 @@ cp dbt_project/profiles.yml.example ~/.dbt/profiles.yml
 ### Verify Installation
 ```bash
 # Check dbt connection
-make dbt-debug
-
-# View all available commands
-make help
+uv run dbt-debug
 ```
 
 ## Usage
@@ -77,101 +59,72 @@ make help
 
 ```bash
 # Run all models
-make dbt-run
+uv run dbt-run
 
 # Run specific layers
-make dbt-staging        # Staging models only
-make dbt-intermediate   # Intermediate models only
-make dbt-marts          # Marts models only
+uv run dbt-run --select staging        # Staging models only
+uv run dbt-run --select intermediate   # Intermediate models only
+uv run dbt-run --select marts          # Marts models only
 
 # Test data quality
-make dbt-test
-
-# Complete pipeline (staging → intermediate → marts → test)
-make dbt-pipeline
-
-# Generate and view documentation
-make dbt-docs
-```
-
-### Using UV Scripts
-
-```bash
-# dbt commands via UV
-uv run dbt-run
 uv run dbt-test
+
+# Complete pipeline (build and test all models)
 uv run dbt-build
 
-# Model-specific runs
-uv run dbt-run-staging
-uv run dbt-run-marts
+# Generate and view documentation
+uv run dbt-docs-generate
+uv run dbt-docs-serve
 ```
 
 ### Exploratory Analysis
 
+Launch Jupyter for interactive analysis:
 ```bash
 # Start Jupyter Notebook
-make notebook
+uv run --extra analysis jupyter notebook
 
 # Or Jupyter Lab
-make lab
+uv run --extra analysis jupyter lab
+```
+
+Explore the database directly using DuckDB UI:
+```bash
+uv run explore-db
 ```
 
 ### Code Quality
 
 ```bash
 # Format code
-make format
+uv run black .
 
 # Lint code
-make lint
+uv run ruff check .
 
-# Run all checks
-make check
+# Type check
+uv run mypy src
+
+# Run tests
+uv run pytest
 ```
 
-## Development Workflow - data extraction
+## Development Workflow
 
-1. **Explore data** in Jupyter notebooks (`notebooks/exploratory/`)
+1. **Explore data** in Jupyter notebooks (`notebooks/exploratory/`) or DuckDB UI (`uv run explore-db`)
 2. **Transform data** with dbt models (`dbt_project/models/`)
-3. **Test transformations** (`make dbt-test`)
+3. **Test transformations** (`uv run dbt-test`)
 4. **Document insights** and iterate
 
 ## Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
 - **[dbt_project/README.md](dbt_project/README.md)** - dbt models documentation
 - **[docs/data_schema.md](docs/data_schema.md)** - Raw data schema reference
 
 Generate and browse interactive dbt documentation:
 ```bash
-make dbt-docs
-```
-
-## Testing
-
-```bash
-# Run Python tests
-make test
-
-# Run with coverage report
-make test-coverage
-
-# Run dbt tests
-make dbt-test
-```
-
-## Maintenance
-
-```bash
-# Clean generated files
-make clean
-
-# Clean and rebuild everything
-make rebuild
-
-# Clean database (WARNING: deletes data!)
-make clean-data
+uv run dbt-docs-generate
+uv run dbt-docs-serve
 ```
 
 ## License
@@ -195,7 +148,7 @@ Use this code as a reference or starting point for learning, but conduct thoroug
 
 ## Contributing
 
-This is a group challenge project, and it's not open to exernal contributions. Suggestions and feedback are welcome! Feel free to:
+This is a group challenge project, and it's not open to external contributions. Suggestions and feedback are welcome! Feel free to:
 - Open issues for bugs or questions
 - Share ideas for data analysis approaches
 

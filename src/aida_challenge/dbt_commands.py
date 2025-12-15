@@ -141,37 +141,3 @@ def dbt_docs_serve():
     _set_project_root()
     subprocess.run(["dbt", "docs", "serve", *get_dbt_args()], check=False)
     _archive_log()
-
-
-def dbt_run_staging():
-    """Run staging models."""
-    _set_project_root()
-    result = subprocess.run(["dbt", "run", "--select", "staging", *get_dbt_args()], check=False)
-    _archive_log()
-    return result.returncode
-
-
-def dbt_run_intermediate():
-    """Run intermediate models."""
-    _set_project_root()
-    result = subprocess.run(
-        ["dbt", "run", "--select", "intermediate", *get_dbt_args()], check=False
-    )
-    _archive_log()
-    return result.returncode
-
-
-def dbt_run_marts():
-    """Run marts models."""
-    _set_project_root()
-    result = subprocess.run(["dbt", "run", "--select", "marts", *get_dbt_args()], check=False)
-    _archive_log()
-    return result.returncode
-
-
-def dbt_test_sources():
-    """Test source data."""
-    _set_project_root()
-    result = subprocess.run(["dbt", "test", "--select", "source:*", *get_dbt_args()], check=False)
-    _archive_log()
-    return result.returncode
