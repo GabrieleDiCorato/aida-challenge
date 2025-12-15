@@ -3,6 +3,6 @@ aida_insurance:
   outputs:
     dev:
       type: duckdb
+      # Relative path from project root directory
       path: "data/aida_challenge.duckdb"
       schema: main
-      threads: 4

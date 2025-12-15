@@ -6,21 +6,42 @@ import os
 from pathlib import Path
 
 
-def get_dbt_args():
-    """Get common dbt arguments."""
+def _set_project_root():
+    """Change to project root directory for relative paths in profiles.yml."""
     root = Path(__file__).parent.parent.parent
-    profiles_dir = root / "dbt_project"
+    os.chdir(root)
+    return root
+
+
+def get_dbt_args():
+    """Get common dbt arguments with proper paths."""
+    root = Path(__file__).parent.parent.parent
+    project_dir = root / "dbt_project"
 
     # Debug output
     print(f"Root directory: {root.absolute()}")
-    print(f"Profiles directory: {profiles_dir.absolute()}")
+    print(f"Project directory: {project_dir.absolute()}")
 
-    # Set environment variable for dbt to find profiles
-    os.environ["DBT_PROFILES_DIR"] = str(profiles_dir)
+    # Set profiles directory to user's home directory (standard dbt location)
+    # But allow override via environment variable for local development
+    profiles_dir = os.getenv("DBT_PROFILES_DIR")
+    if not profiles_dir:
+        # Check if profiles.yml exists in project (development setup)
+        if (project_dir / "profiles.yml").exists():
+            profiles_dir = str(project_dir)
+            print(f"Using local profiles directory: {profiles_dir}")
+        else:
+            # Use default ~/.dbt location
+            profiles_dir = str(Path.home() / ".dbt")
+            print(f"Using home profiles directory: {profiles_dir}")
+    else:
+        print(f"Using environment profiles directory: {profiles_dir}")
+
+    os.environ["DBT_PROFILES_DIR"] = profiles_dir
 
     return [
         "--project-dir",
-        str(root / "dbt_project"),
+        str(project_dir),
         "--profiles-dir",
         str(profiles_dir),
         "--profile",
@@ -31,6 +52,7 @@ def get_dbt_args():
 
 def dbt_debug():
     """Run dbt debug."""
+    _set_project_root()
     args = get_dbt_args()
     print(f"Running: dbt debug {' '.join(args)}")
     subprocess.run(["dbt", "debug", *args], check=False)
@@ -38,54 +60,65 @@ def dbt_debug():
 
 def dbt_deps():
     """Install dbt dependencies."""
+    _set_project_root()
     subprocess.run(["dbt", "deps", *get_dbt_args()], check=False)
 
 
 def dbt_run():
     """Run all dbt models."""
+    _set_project_root()
     subprocess.run(["dbt", "run", *get_dbt_args()], check=False)
 
 
 def dbt_test():
     """Test all dbt models."""
+    _set_project_root()
     subprocess.run(["dbt", "test", *get_dbt_args()], check=False)
 
 
 def dbt_build():
     """Build and test all dbt models."""
+    _set_project_root()
     subprocess.run(["dbt", "build", *get_dbt_args()], check=False)
 
 
 def dbt_clean():
     """Clean dbt artifacts."""
+    _set_project_root()
     subprocess.run(["dbt", "clean", *get_dbt_args()], check=False)
 
 
 def dbt_docs_generate():
     """Generate dbt documentation."""
+    _set_project_root()
     subprocess.run(["dbt", "docs", "generate", *get_dbt_args()], check=False)
 
 
 def dbt_docs_serve():
     """Serve dbt documentation."""
+    _set_project_root()
     subprocess.run(["dbt", "docs", "serve", *get_dbt_args()], check=False)
 
 
 def dbt_run_staging():
     """Run staging models."""
+    _set_project_root()
     subprocess.run(["dbt", "run", "--select", "staging", *get_dbt_args()], check=False)
 
 
 def dbt_run_intermediate():
     """Run intermediate models."""
+    _set_project_root()
     subprocess.run(["dbt", "run", "--select", "intermediate", *get_dbt_args()], check=False)
 
 
 def dbt_run_marts():
     """Run marts models."""
+    _set_project_root()
     subprocess.run(["dbt", "run", "--select", "marts", *get_dbt_args()], check=False)
 
 
 def dbt_test_sources():
     """Test source data."""
+    _set_project_root()
     subprocess.run(["dbt", "test", "--select", "source:*", *get_dbt_args()], check=False)

@@ -24,23 +24,42 @@ The goal is to explore the data, identify valuable insights, and build reproduci
 
 #### Option 1: One-Command Setup (Recommended)
 ```bash
+# Copy the example profiles file and edit with your setup
+cp dbt_project/profiles.yml.example dbt_project/profiles.yml
+
+# Initialize project
 make init
 ```
 This will install dependencies, setup dbt, load data, and run the complete dbt pipeline.
 
 #### Option 2: Step-by-Step Setup
 ```bash
-# 1. Install dependencies
+# 1. Copy and configure dbt profiles
+cp dbt_project/profiles.yml.example dbt_project/profiles.yml
+# Edit profiles.yml if needed (default uses relative paths)
+
+# 2. Install dependencies
 make install-all
 
-# 2. Setup dbt
+# 3. Setup dbt
 make dbt-setup
 
-# 3. Load data into DuckDB
+# 4. Load data into DuckDB
 make load-data
 
-# 4. Run dbt transformations
+# 5. Run dbt transformations
 make dbt-pipeline
+```
+
+#### Alternative: Standard dbt Profiles Location
+For a more production-ready setup, you can use the standard dbt profiles location:
+```bash
+# Copy profiles to ~/.dbt/ directory
+mkdir -p ~/.dbt
+cp dbt_project/profiles.yml.example ~/.dbt/profiles.yml
+# Edit ~/.dbt/profiles.yml and adjust paths as needed
+
+# The dbt commands will automatically use ~/.dbt/profiles.yml
 ```
 
 ### Verify Installation
