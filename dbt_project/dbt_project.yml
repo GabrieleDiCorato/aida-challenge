@@ -19,6 +19,9 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+# Configure log path with timestamp
+log-path: "logs"
+
 # Disable ANSI color codes in logs
 flags:
   use_colors: false
