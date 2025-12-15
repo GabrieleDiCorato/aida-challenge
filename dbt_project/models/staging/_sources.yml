@@ -1,0 +1,132 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw CSV data loaded into DuckDB"
+    database: main
+    schema: main
+    tables:
+      - name: clienti
+        description: "Customer master data with demographics, financial info, and engagement metrics"
+        columns:
+          - name: codice_cliente
+            description: "Unique customer identifier"
+            tests:
+              - unique
+              - not_null
+          - name: Nome
+            description: "Customer first name"
+          - name: Cognome
+            description: "Customer last name"
+          - name: Età
+            description: "Customer age"
+            tests:
+              - not_null
+          - name: Engagement_Score
+            description: "Customer engagement score (0-100)"
+          - name: Churn_Probability
+            description: "Probability of customer churn (0-1)"
+          - name: CLV_Stimato
+            description: "Estimated customer lifetime value"
+      
+      - name: polizze
+        description: "Insurance policies with premiums, coverage, and financial details"
+        columns:
+          - name: codice_cliente
+            description: "Foreign key to clienti table"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
+          - name: Prodotto
+            description: "Insurance product name"
+          - name: "Area di Bisogno"
+            description: "Product category (Protezione, Risparmio e Investimento, etc.)"
+          - name: Stato_Polizza
+            description: "Policy status (Attiva, Scaduta, etc.)"
+          - name: Premio_Totale_Annuo
+            description: "Total annual premium"
+      
+      - name: sinistri
+        description: "Insurance claims and settlements"
+        columns:
+          - name: codice_cliente
+            description: "Foreign key to clienti table"
+            tests:
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
+          - name: Sinistro
+            description: "Claim type or description"
+          - name: Data_Sinistro
+            description: "Date of claim"
+          - name: Importo_Liquidato
+            description: "Amount settled"
+          - name: Stato_Liquidazione
+            description: "Settlement status"
+      
+      - name: reclami
+        description: "Customer complaints and inquiries"
+        columns:
+          - name: codice_cliente
+            description: "Foreign key to clienti table"
+            tests:
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
+          - name: Reclami_e_info
+            description: "Complaint or inquiry details"
+      
+      - name: abitazioni
+        description: "Customer housing information"
+        columns:
+          - name: codice_cliente
+            description: "Foreign key to clienti table"
+            tests:
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
+          - name: "Luogo di Residenza"
+            description: "Place of residence"
+          - name: Indirizzo
+            description: "Street address"
+          - name: Metratura
+            description: "Property size in square meters"
+          - name: Sistema_Allarme
+            description: "Whether property has alarm system"
+      
+      - name: interazioni_clienti
+        description: "Customer interactions with the company"
+        columns:
+          - name: codice_cliente
+            description: "Foreign key to clienti table"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
+          - name: Data_Interazione
+            description: "Date of interaction"
+          - name: Tipo_Interazione
+            description: "Type of interaction (Visita Agente, Chat Online, App Mobile, etc.)"
+          - name: Motivo
+            description: "Reason for interaction"
+          - name: Esito
+            description: "Outcome (Positivo, Negativo, Neutrale)"
+          - name: Conversione
+            description: "Whether interaction resulted in conversion"
+      
+      - name: competitor_prodotti
+        description: "Competitor product information and market data"
+        columns:
+          - name: Competitor
+            description: "Competitor name"
+          - name: Tipo_Prodotto
+            description: "Product type"
+          - name: Premio_Medio
+            description: "Average premium"
+          - name: Rating_Clienti
+            description: "Customer rating"
+          - name: Quota_Mercato_Perc
+            description: "Market share percentage"
