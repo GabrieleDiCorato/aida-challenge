@@ -112,8 +112,12 @@ lab: ## Start Jupyter Lab
 	uv run --extra analysis jupyter lab
 
 ##@ Data Management
-load-data: ## Run data loading notebook
+load-data: ## Load CSV files into DuckDB
 	@echo "$(BLUE)Loading data into DuckDB...$(NC)"
+	uv run load-raw-data
+
+load-data-notebook: ## Run data loading notebook (alternative method)
+	@echo "$(BLUE)Loading data using notebook...$(NC)"
 	uv run --extra analysis jupyter nbconvert --to notebook --execute notebooks/exploratory/00_data_loading.ipynb
 
 ##@ Code Quality

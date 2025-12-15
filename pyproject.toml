@@ -42,6 +42,7 @@ build-backend = "hatchling.build"
 packages = ["src/aida_challenge"]
 
 [project.scripts]
+load-raw-data = "aida_challenge.data_loader:load_raw_data"
 dbt-debug = "aida_challenge.dbt_commands:dbt_debug"
 dbt-deps = "aida_challenge.dbt_commands:dbt_deps"
 dbt-run = "aida_challenge.dbt_commands:dbt_run"

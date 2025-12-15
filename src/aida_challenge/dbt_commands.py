@@ -15,6 +15,20 @@ def _set_project_root():
     return root
 
 
+def _check_database():
+    """Check if database exists, if not load raw data."""
+    root = Path(__file__).parent.parent.parent
+    db_path = root / "data" / "aida_challenge.duckdb"
+
+    if not db_path.exists():
+        print(f"WARNING: Database not found at: {db_path}")
+        print("Loading raw data from CSV files...")
+        from aida_challenge.data_loader import load_raw_data
+
+        load_raw_data()
+        print()
+
+
 def _archive_log():
     """Archive dbt.log to timestamped filename after command execution."""
     root = Path(__file__).parent.parent.parent
@@ -86,6 +100,7 @@ def dbt_deps():
 def dbt_run():
     """Run all dbt models."""
     _set_project_root()
+    _check_database()
     result = subprocess.run(["dbt", "run", *get_dbt_args()], check=False)
     _archive_log()
     return result.returncode
