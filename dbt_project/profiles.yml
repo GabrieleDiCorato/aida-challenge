@@ -1,0 +1,8 @@
+aida_insurance:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: C:/Users/gabri/workspace/aida_projects/aida-challenge/data/aida_challenge.duckdb
+      schema: main
+      threads: 4

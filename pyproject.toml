@@ -41,29 +41,22 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/aida_challenge"]
 
+[project.scripts]
+dbt-debug = "aida_challenge.dbt_commands:dbt_debug"
+dbt-deps = "aida_challenge.dbt_commands:dbt_deps"
+dbt-run = "aida_challenge.dbt_commands:dbt_run"
+dbt-test = "aida_challenge.dbt_commands:dbt_test"
+dbt-build = "aida_challenge.dbt_commands:dbt_build"
+dbt-clean = "aida_challenge.dbt_commands:dbt_clean"
+dbt-docs-generate = "aida_challenge.dbt_commands:dbt_docs_generate"
+dbt-docs-serve = "aida_challenge.dbt_commands:dbt_docs_serve"
+dbt-run-staging = "aida_challenge.dbt_commands:dbt_run_staging"
+dbt-run-intermediate = "aida_challenge.dbt_commands:dbt_run_intermediate"
+dbt-run-marts = "aida_challenge.dbt_commands:dbt_run_marts"
+dbt-test-sources = "aida_challenge.dbt_commands:dbt_test_sources"
+
 [tool.uv]
 dev-dependencies = []
-
-[tool.uv.scripts]
-# dbt commands
-dbt-debug = "dbt debug --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-deps = "dbt deps --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-run = "dbt run --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-test = "dbt test --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-build = "dbt build --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-docs-generate = "dbt docs generate --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-docs-serve = "dbt docs serve --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-clean = "dbt clean --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-
-# dbt model-specific commands
-dbt-run-staging = "dbt run --select staging --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-run-intermediate = "dbt run --select intermediate --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-run-marts = "dbt run --select marts --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-dbt-test-sources = "dbt test --select source:* --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
-
-# Combined workflows
-dbt-full-refresh = { cmd = "dbt run --full-refresh --project-dir dbt_project --profiles-dir dbt_project --no-use-colors && dbt test --project-dir dbt_project --profiles-dir dbt_project --no-use-colors" }
-dbt-setup = { cmd = "dbt debug --project-dir dbt_project --profiles-dir dbt_project --no-use-colors && dbt deps --project-dir dbt_project --profiles-dir dbt_project --no-use-colors" }
 
 [tool.ruff]
 line-length = 100

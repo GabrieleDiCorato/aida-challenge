@@ -15,29 +15,33 @@ models:
         tests:
           - not_null
           - dbt_utils.accepted_range:
-              min_value: 18
-              max_value: 100
+              arguments:
+                min_value: 18
+                max_value: 100
       
       - name: engagement_score
         description: "Customer engagement score (0-100)"
         tests:
           - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
       
       - name: churn_probability
         description: "Probability of customer churn (0-1)"
         tests:
           - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 1
+              arguments:
+                min_value: 0
+                max_value: 1
       
       - name: satisfaction_score
         description: "Customer satisfaction score (0-100)"
         tests:
           - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
 
   - name: stg_polizze
     description: "Cleaned and standardized policy data"
@@ -47,21 +51,24 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_clienti')
-              field: codice_cliente
+              arguments:
+                to: ref('stg_clienti')
+                field: codice_cliente
       
       - name: premio_totale_annuo
         description: "Total annual premium"
         tests:
           - dbt_utils.accepted_range:
-              min_value: 0
+              arguments:
+                min_value: 0
       
       - name: loss_ratio
         description: "Loss ratio - should be between 0 and 1 for normal cases"
         tests:
           - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 5  # Allow some outliers
+              arguments:
+                min_value: 0
+                max_value: 5  # Allow some outliers
 
   - name: stg_sinistri
     description: "Cleaned claims data (null values filtered)"
@@ -70,8 +77,9 @@ models:
         description: "Foreign key to customers"
         tests:
           - relationships:
-              to: ref('stg_clienti')
-              field: codice_cliente
+              arguments:
+                to: ref('stg_clienti')
+                field: codice_cliente
 
   - name: stg_interazioni_clienti
     description: "Cleaned customer interactions data"
@@ -81,8 +89,9 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_clienti')
-              field: codice_cliente
+              arguments:
+                to: ref('stg_clienti')
+                field: codice_cliente
       
       - name: data_interazione
         description: "Date of interaction"
@@ -112,5 +121,7 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_customers')
-              field: codice_cliente
+              arguments:
+                to: ref('dim_customers')
+                field: codice_cliente
+

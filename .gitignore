@@ -217,6 +217,7 @@ data/raw/
 dbt_project/target/
 dbt_project/dbt_packages/
 dbt_project/logs/
+user.yml
 
 # IDE
 .vscode/
