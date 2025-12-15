@@ -30,7 +30,7 @@ install-analysis: ## Install analysis dependencies (jupyter, matplotlib, etc.)
 	uv sync --extra analysis
 
 setup: install ## Setup the project (install deps)
-	@echo "$(GREEN)✓ Project setup complete!$(NC)"
+	@echo "$(GREEN)Project setup complete!$(NC)"
 
 ##@ dbt Commands
 dbt-debug: ## Test dbt connection
@@ -100,7 +100,7 @@ dbt-pipeline: ## Run complete dbt pipeline (staging -> intermediate -> marts -> 
 	@$(MAKE) dbt-intermediate
 	@$(MAKE) dbt-marts
 	@$(MAKE) dbt-test
-	@echo "$(GREEN)✓ Pipeline complete!$(NC)"
+	@echo "$(GREEN)Pipeline complete!$(NC)"
 
 ##@ Jupyter
 notebook: ## Start Jupyter notebook server
@@ -130,7 +130,7 @@ type-check: ## Type check with mypy
 	uv run --extra dev mypy src/
 
 check: format lint type-check ## Run all code quality checks
-	@echo "$(GREEN)✓ All checks passed!$(NC)"
+	@echo "$(GREEN)All checks passed!$(NC)"
 
 ##@ Testing
 test: ## Run Python tests
@@ -152,7 +152,7 @@ clean: ## Clean all generated files
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	@$(MAKE) dbt-clean
-	@echo "$(GREEN)✓ Cleanup complete!$(NC)"
+	@echo "$(GREEN)Cleanup complete!$(NC)"
 
 clean-data: ## Clean DuckDB database (WARNING: deletes data!)
 	@echo "$(YELLOW)WARNING: This will delete your DuckDB database!$(NC)"
@@ -160,23 +160,23 @@ clean-data: ## Clean DuckDB database (WARNING: deletes data!)
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
 		rm -f data/aida_challenge.duckdb data/aida_challenge.duckdb.wal; \
-		echo "$(GREEN)✓ Database cleaned!$(NC)"; \
+		echo "$(GREEN)Database cleaned!$(NC)"; \
 	else \
 		echo "$(YELLOW)Cancelled.$(NC)"; \
 	fi
 
 ##@ Complete Workflows
 init: install-all dbt-setup load-data dbt-pipeline ## Initialize complete project from scratch
-	@echo "$(GREEN)✓ Project initialized successfully!$(NC)"
+	@echo "$(GREEN)Project initialized successfully!$(NC)"
 	@echo "$(BLUE)Next steps:$(NC)"
 	@echo "  - Run 'make notebook' to start Jupyter"
 	@echo "  - Run 'make dbt-docs' to view dbt documentation"
 
 rebuild: clean load-data dbt-full-refresh ## Clean and rebuild everything
-	@echo "$(GREEN)✓ Rebuild complete!$(NC)"
+	@echo "$(GREEN)Rebuild complete!$(NC)"
 
 all: install dbt-pipeline test ## Install, run pipeline, and test
-	@echo "$(GREEN)✓ All tasks complete!$(NC)"
+	@echo "$(GREEN)All tasks complete!$(NC)"
 
 ##@ Default
 .DEFAULT_GOAL := help

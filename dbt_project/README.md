@@ -49,11 +49,6 @@ Final analytics-ready tables:
 
 ## Setup & Run
 
-### Prerequisites
-```bash
-pip install dbt-duckdb
-```
-
 ### Configure Connection
 The `profiles.yaml` is already configured to use:
 - Database: `../data/aida_challenge.duckdb`
