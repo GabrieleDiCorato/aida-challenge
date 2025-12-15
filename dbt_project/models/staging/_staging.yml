@@ -9,7 +9,7 @@ models:
         tests:
           - unique
           - not_null
-      
+
       - name: eta
         description: "Customer age"
         tests:
@@ -17,21 +17,21 @@ models:
           - dbt_utils.accepted_range:
               min_value: 18
               max_value: 100
-      
+
       - name: engagement_score
         description: "Customer engagement score (0-100)"
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 100
-      
+
       - name: churn_probability
         description: "Probability of customer churn (0-1)"
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 1
-      
+
       - name: satisfaction_score
         description: "Customer satisfaction score (0-100)"
         tests:
@@ -49,13 +49,13 @@ models:
           - relationships:
               to: ref('stg_clienti')
               field: codice_cliente
-      
+
       - name: premio_totale_annuo
         description: "Total annual premium"
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
-      
+
       - name: loss_ratio
         description: "Loss ratio - should be between 0 and 1 for normal cases"
         tests:
@@ -83,7 +83,7 @@ models:
           - relationships:
               to: ref('stg_clienti')
               field: codice_cliente
-      
+
       - name: data_interazione
         description: "Date of interaction"
         tests:

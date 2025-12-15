@@ -27,7 +27,7 @@ sources:
             description: "Probability of customer churn (0-1)"
           - name: CLV_Stimato
             description: "Estimated customer lifetime value"
-      
+
       - name: polizze
         description: "Insurance policies with premiums, coverage, and financial details"
         columns:
@@ -46,7 +46,7 @@ sources:
             description: "Policy status (Attiva, Scaduta, etc.)"
           - name: Premio_Totale_Annuo
             description: "Total annual premium"
-      
+
       - name: sinistri
         description: "Insurance claims and settlements"
         columns:
@@ -64,7 +64,7 @@ sources:
             description: "Amount settled"
           - name: Stato_Liquidazione
             description: "Settlement status"
-      
+
       - name: reclami
         description: "Customer complaints and inquiries"
         columns:
@@ -76,7 +76,7 @@ sources:
                   field: codice_cliente
           - name: Reclami_e_info
             description: "Complaint or inquiry details"
-      
+
       - name: abitazioni
         description: "Customer housing information"
         columns:
@@ -94,7 +94,7 @@ sources:
             description: "Property size in square meters"
           - name: Sistema_Allarme
             description: "Whether property has alarm system"
-      
+
       - name: interazioni_clienti
         description: "Customer interactions with the company"
         columns:
@@ -115,7 +115,7 @@ sources:
             description: "Outcome (Positivo, Negativo, Neutrale)"
           - name: Conversione
             description: "Whether interaction resulted in conversion"
-      
+
       - name: competitor_prodotti
         description: "Competitor product information and market data"
         columns:

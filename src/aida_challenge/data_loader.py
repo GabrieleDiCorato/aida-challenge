@@ -41,7 +41,7 @@ def load_raw_data():
 
         con.execute(
             f"""
-            CREATE TABLE {table_name} AS 
+            CREATE TABLE {table_name} AS
             SELECT * FROM read_csv_auto('{full_path}')
         """
         )

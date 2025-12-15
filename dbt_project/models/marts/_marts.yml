@@ -9,7 +9,7 @@ models:
         tests:
           - unique
           - not_null
-      
+
       - name: segmento_cliente
         description: "Customer segmentation category"
         tests:

@@ -62,9 +62,18 @@ combined as (
 with_rankings as (
     select
         *,
-        rank() over (partition by tipo_prodotto order by premio_medio) as rank_premio,
-        rank() over (partition by tipo_prodotto order by massimale_medio desc) as rank_copertura,
-        rank() over (partition by tipo_prodotto order by rating_clienti desc nulls last) as rank_rating
+        rank() over (
+            partition by tipo_prodotto
+            order by premio_medio
+        ) as rank_premio,
+        rank() over (
+            partition by tipo_prodotto
+            order by massimale_medio desc
+        ) as rank_copertura,
+        rank() over (
+            partition by tipo_prodotto
+            order by rating_clienti desc nulls last
+        ) as rank_rating
     from combined
 )
 

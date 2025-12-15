@@ -1,7 +1,6 @@
 """Wrapper functions for dbt commands."""
 
 import subprocess
-import sys
 import os
 import shutil
 from pathlib import Path
@@ -9,10 +8,11 @@ from datetime import datetime
 
 
 def _set_project_root():
-    """Change to project root directory for relative paths in profiles.yml."""
+    """Change to dbt project directory."""
     root = Path(__file__).parent.parent.parent
-    os.chdir(root)
-    return root
+    dbt_dir = root / "dbt_project"
+    os.chdir(dbt_dir)
+    return dbt_dir
 
 
 def _check_database():
@@ -25,7 +25,16 @@ def _check_database():
         print("Loading raw data from CSV files...")
         from aida_challenge.data_loader import load_raw_data
 
-        load_raw_data()
+        # data_loader might expect to be at root or handle paths absolutely
+        # Let's check data_loader.py later, but for now assume it works or we switch back
+        # Actually, if data_loader relies on CWD, we might have an issue.
+        # But let's assume we can switch back to root for data loading if needed.
+        current_dir = os.getcwd()
+        os.chdir(root)
+        try:
+            load_raw_data()
+        finally:
+            os.chdir(current_dir)
         print()
 
 
@@ -46,11 +55,10 @@ def _archive_log():
 
 def get_dbt_args():
     """Get common dbt arguments with proper paths."""
-    root = Path(__file__).parent.parent.parent
-    project_dir = root / "dbt_project"
+    # We assume we are in dbt_project directory
+    project_dir = Path.cwd()
 
     # Debug output
-    print(f"Root directory: {root.absolute()}")
     print(f"Project directory: {project_dir.absolute()}")
 
     # Set profiles directory to user's home directory (standard dbt location)
