@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Final customer dimension with aggregated metrics"
+    columns:
+      - name: codice_cliente
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      
+      - name: customer_segment
+        description: "Customer segmentation category"
+        tests:
+          - accepted_values:
+              values: ['Premium Loyal', 'Premium At Risk', 'High Churn Risk', 'Growth Opportunity', 'Inactive', 'Standard']
+
+  - name: fact_policies
+    description: "Policy fact table with full details"
+    columns:
+      - name: codice_cliente
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: codice_cliente

@@ -9,6 +9,7 @@ dbt_project/
 ├── models/
 │   ├── staging/           # Clean & standardize raw data
 │   │   ├── _sources.yml   # Source definitions
+│   │   ├── _staging.yml   # Tests & Documentation
 │   │   ├── stg_clienti.sql
 │   │   ├── stg_polizze.sql
 │   │   ├── stg_sinistri.sql
@@ -17,14 +18,16 @@ dbt_project/
 │   │   ├── stg_interazioni_clienti.sql
 │   │   └── stg_competitor_prodotti.sql
 │   ├── intermediate/      # Business logic transformations
+│   │   ├── _intermediate.yml
 │   │   ├── int_customer_policies.sql
 │   │   ├── int_customer_interactions.sql
 │   │   └── int_customer_claims.sql
 │   └── marts/            # Final analytics tables
+│       ├── _marts.yml
 │       ├── dim_customers.sql
 │       ├── fact_policies.sql
 │       └── mart_competitor_analysis.sql
-└── schema.yml           # Tests and documentation
+└── dbt_project.yml           # Project configuration
 ```
 
 ## Models
@@ -60,6 +63,9 @@ The `profiles.yaml` is already configured to use:
 # Navigate to dbt project
 cd dbt_project
 
+# Install dependencies (dbt-utils, etc.)
+dbt deps
+
 # Test source data
 dbt test --select source:*
 
@@ -75,6 +81,16 @@ dbt test
 # Generate documentation
 dbt docs generate
 dbt docs serve
+```
+
+### Code Quality
+
+```bash
+# Lint SQL files
+uv run sqlfluff lint dbt_project/models
+
+# Fix SQL linting errors automatically
+uv run sqlfluff fix dbt_project/models
 ```
 
 ### Incremental Workflow
