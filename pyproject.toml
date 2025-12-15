@@ -46,24 +46,24 @@ dev-dependencies = []
 
 [tool.uv.scripts]
 # dbt commands
-dbt-debug = "dbt debug --project-dir dbt_project --profiles-dir dbt_project"
-dbt-deps = "dbt deps --project-dir dbt_project --profiles-dir dbt_project"
-dbt-run = "dbt run --project-dir dbt_project --profiles-dir dbt_project"
-dbt-test = "dbt test --project-dir dbt_project --profiles-dir dbt_project"
-dbt-build = "dbt build --project-dir dbt_project --profiles-dir dbt_project"
-dbt-docs-generate = "dbt docs generate --project-dir dbt_project --profiles-dir dbt_project"
-dbt-docs-serve = "dbt docs serve --project-dir dbt_project --profiles-dir dbt_project"
-dbt-clean = "dbt clean --project-dir dbt_project --profiles-dir dbt_project"
+dbt-debug = "dbt debug --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-deps = "dbt deps --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-run = "dbt run --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-test = "dbt test --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-build = "dbt build --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-docs-generate = "dbt docs generate --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-docs-serve = "dbt docs serve --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-clean = "dbt clean --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
 
 # dbt model-specific commands
-dbt-run-staging = "dbt run --select staging --project-dir dbt_project --profiles-dir dbt_project"
-dbt-run-intermediate = "dbt run --select intermediate --project-dir dbt_project --profiles-dir dbt_project"
-dbt-run-marts = "dbt run --select marts --project-dir dbt_project --profiles-dir dbt_project"
-dbt-test-sources = "dbt test --select source:* --project-dir dbt_project --profiles-dir dbt_project"
+dbt-run-staging = "dbt run --select staging --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-run-intermediate = "dbt run --select intermediate --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-run-marts = "dbt run --select marts --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
+dbt-test-sources = "dbt test --select source:* --project-dir dbt_project --profiles-dir dbt_project --no-use-colors"
 
 # Combined workflows
-dbt-full-refresh = { cmd = "dbt run --full-refresh --project-dir dbt_project --profiles-dir dbt_project && dbt test --project-dir dbt_project --profiles-dir dbt_project" }
-dbt-setup = { cmd = "dbt debug --project-dir dbt_project --profiles-dir dbt_project && dbt deps --project-dir dbt_project --profiles-dir dbt_project" }
+dbt-full-refresh = { cmd = "dbt run --full-refresh --project-dir dbt_project --profiles-dir dbt_project --no-use-colors && dbt test --project-dir dbt_project --profiles-dir dbt_project --no-use-colors" }
+dbt-setup = { cmd = "dbt debug --project-dir dbt_project --profiles-dir dbt_project --no-use-colors && dbt deps --project-dir dbt_project --profiles-dir dbt_project --no-use-colors" }
 
 [tool.ruff]
 line-length = 100

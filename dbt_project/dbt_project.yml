@@ -19,6 +19,9 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+# Disable ANSI color codes in logs
+flags:
+  use_colors: false
 
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
