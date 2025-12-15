@@ -56,9 +56,9 @@ final as (
         p.canale_acquisizione,
         
         -- Policy status flags
-        case when p.stato_polizza = 'Attiva' then 1 else 0 end as is_active,
-        case when p.data_scadenza < current_date then 1 else 0 end as is_expired,
-        case when p.data_scadenza between current_date and current_date + interval '90 days' then 1 else 0 end as is_expiring_soon,
+        case when p.stato_polizza = 'Attiva' then 1 else 0 end as attiva,
+        case when p.data_scadenza < current_date then 1 else 0 end as scaduta,
+        case when p.data_scadenza between current_date and current_date + interval '90 days' then 1 else 0 end as in_scadenza,
         
         -- Profitability classification
         case
@@ -66,7 +66,7 @@ final as (
             when p.margine_lordo > 500 then 'Medium Margin'
             when p.margine_lordo > 0 then 'Low Margin'
             else 'Negative Margin'
-        end as profitability_tier,
+        end as fascia_profittabilita,
         
         -- Metadata
         current_timestamp as _dbt_loaded_at

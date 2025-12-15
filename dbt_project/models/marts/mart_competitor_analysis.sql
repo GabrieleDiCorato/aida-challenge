@@ -6,7 +6,7 @@
 
 with our_products as (
     select
-        'AIDA Insurance' as company,
+        'AIDA Insurance' as compagnia,
         area_bisogno as tipo_prodotto,
         avg(premio_totale_annuo) as premio_medio,
         avg(massimale) as massimale_medio,
@@ -18,7 +18,7 @@ with our_products as (
 
 competitors as (
     select
-        competitor as company,
+        competitor as compagnia,
         tipo_prodotto,
         premio_medio,
         massimale_medio,
@@ -29,27 +29,27 @@ competitors as (
 
 our_enriched as (
     select
-        company,
+        compagnia,
         tipo_prodotto,
         premio_medio,
         massimale_medio,
         null as rating_clienti,
         null as quota_mercato_perc,
         num_polizze,
-        'Internal' as source
+        'Internal' as fonte
     from our_products
 ),
 
 competitors_enriched as (
     select
-        company,
+        compagnia,
         tipo_prodotto,
         premio_medio,
         massimale_medio,
         rating_clienti,
         quota_mercato_perc,
         null as num_polizze,
-        'Competitor' as source
+        'Competitor' as fonte
     from competitors
 ),
 

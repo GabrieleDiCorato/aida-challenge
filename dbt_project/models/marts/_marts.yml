@@ -10,7 +10,7 @@ models:
           - unique
           - not_null
       
-      - name: customer_segment
+      - name: segmento_cliente
         description: "Customer segmentation category"
         tests:
           - accepted_values:

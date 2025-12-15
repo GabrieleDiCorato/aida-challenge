@@ -69,7 +69,7 @@ final as (
             when cb.potenziale_crescita > 0.5 then 'Growth Opportunity'
             when cb.num_polizze_attive = 0 then 'Inactive'
             else 'Standard'
-        end as customer_segment,
+        end as segmento_cliente,
         
         -- Risk classification
         case
@@ -77,7 +77,7 @@ final as (
             when coalesce(cl.frequenza_sinistri_annua, 0) < 0.5 then 'Low Risk'
             when coalesce(cl.frequenza_sinistri_annua, 0) < 1.5 then 'Medium Risk'
             else 'High Risk'
-        end as risk_classification,
+        end as classificazione_rischio,
         
         -- Value classification
         case
@@ -85,7 +85,7 @@ final as (
             when cb.premio_annuo_totale > 2000 then 'Medium Value'
             when cb.premio_annuo_totale > 0 then 'Low Value'
             else 'No Active Policies'
-        end as value_classification,
+        end as classificazione_valore,
         
         -- Metadata
         current_timestamp as _dbt_loaded_at
