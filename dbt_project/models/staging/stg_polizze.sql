@@ -14,32 +14,32 @@ cleaned as (
         codice_cliente,
 
         -- Product info
-        prodotto,
+        "Prodotto" as prodotto,
         "Area di Bisogno" as area_bisogno,
-        stato_polizza,
-        canale_acquisizione,
+        "Stato_Polizza" as stato_polizza,
+        "Canale_Acquisizione" as canale_acquisizione,
 
         -- Dates
         "Data di Emissione" as data_emissione,
-        data_scadenza,
+        "Data_Scadenza" as data_scadenza,
 
         -- Financial
-        premio_ricorrente,
-        premio_unico,
-        premio_totale_annuo,
-        capitale_rivalutato,
-        massimale,
+        "Premio_Ricorrente" as premio_ricorrente,
+        "Premio_Unico" as premio_unico,
+        "Premio_Totale_Annuo" as premio_totale_annuo,
+        "Capitale_Rivalutato" as capitale_rivalutato,
+        "Massimale" as massimale,
 
         -- Costs & margins
-        commissione_perc,
-        commissione_euro,
-        costi_operativi,
-        margine_lordo,
+        "Commissione_Perc" as commissione_perc,
+        "Commissione_Euro" as commissione_euro,
+        "Costi_Operativi" as costi_operativi,
+        "Margine_Lordo" as margine_lordo,
 
         -- Claims
-        importo_liquidato,
-        sinistri_totali,
-        loss_ratio
+        "Importo_Liquidato" as importo_liquidato,
+        "Sinistri_Totali" as sinistri_totali,
+        "Loss_Ratio" as loss_ratio
 
     from source
 )

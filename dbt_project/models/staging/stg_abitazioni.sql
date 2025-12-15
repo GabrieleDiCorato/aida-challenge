@@ -12,9 +12,9 @@ cleaned as (
     select
         codice_cliente,
         "Luogo di Residenza" as luogo_residenza,
-        indirizzo,
-        metratura,
-        sistema_allarme
+        "Indirizzo" as indirizzo,
+        "Metratura" as metratura,
+        "Sistema_Allarme" as sistema_allarme
     from source
 )
 

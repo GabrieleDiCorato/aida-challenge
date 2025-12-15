@@ -14,16 +14,16 @@ cleaned as (
         codice_cliente,
 
         -- Demographics
-        nome,
-        cognome,
+        "Nome" as nome,
+        "Cognome" as cognome,
         "Età" as eta,
         "Luogo di Nascita" as luogo_nascita,
         "Luogo di Residenza" as luogo_residenza,
-        professione,
+        "Professione" as professione,
         "Stato Civile" as stato_civile,
 
         -- Financial
-        reddito,
+        "Reddito" as reddito,
         "Reddito Familiare" as reddito_familiare,
         "Reddito Stimato" as reddito_stimato,
         "Patrimonio Finanziario Stimato" as patrimonio_finanziario,
@@ -36,33 +36,33 @@ cleaned as (
 
         -- Company relationship
         "Anzianità con la Compagnia" as anzianita_compagnia,
-        agenzia,
-        num_polizze,
+        "Agenzia" as agenzia,
+        "Num_Polizze" as num_polizze,
 
         -- Scores & metrics
-        engagement_score,
-        churn_probability,
-        clv_stimato,
-        potenziale_crescita,
-        reclami_totali,
-        satisfaction_score,
+        "Engagement_Score" as engagement_score,
+        "Churn_Probability" as churn_probability,
+        "CLV_Stimato" as clv_stimato,
+        "Potenziale_Crescita" as potenziale_crescita,
+        "Reclami_Totali" as reclami_totali,
+        "Satisfaction_Score" as satisfaction_score,
 
         -- Propensity scores
         "Propensione Acquisto Prodotti Vita" as propensione_vita,
         "Propensione Acquisto Prodotti Danni" as propensione_danni,
 
         -- Geographic
-        latitudine,
-        longitudine,
+        "Latitudine" as latitudine,
+        "Longitudine" as longitudine,
         "Zona di Residenza" as zona_residenza,
         "Valore Immobiliare Medio" as valore_immobiliare_medio,
         "Probabilità Furti Stimata" as probabilita_furti,
         "Probabilità Rapine Stimata" as probabilita_rapine,
 
         -- Activity
-        data_ultima_visita,
-        visite_ultimo_anno,
-        cluster_risposta
+        "Data_Ultima_Visita" as data_ultima_visita,
+        "Visite_Ultimo_Anno" as visite_ultimo_anno,
+        "Cluster_Risposta" as cluster_risposta
 
     from source
 )

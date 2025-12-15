@@ -11,12 +11,12 @@ with source as (
 cleaned as (
     select
         codice_cliente,
-        prodotto,
+        "Prodotto" as prodotto,
         "Area di Bisogno" as area_bisogno,
-        sinistro,
-        data_sinistro,
-        importo_liquidato,
-        stato_liquidazione
+        "Sinistro" as sinistro,
+        "Data_Sinistro" as data_sinistro,
+        "Importo_Liquidato" as importo_liquidato,
+        "Stato_Liquidazione" as stato_liquidazione
     from source
     where sinistro is not null  -- Filter out null claims
 )

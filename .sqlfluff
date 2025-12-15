@@ -1,0 +1,8 @@
+[sqlfluff]
+templater = dbt
+dialect = duckdb
+# Disable RF06 rule - we need quoted identifiers to preserve case sensitivity from CSV sources
+exclude_rules = RF06
+
+[sqlfluff:templater:dbt]
+project_dir = dbt_project/

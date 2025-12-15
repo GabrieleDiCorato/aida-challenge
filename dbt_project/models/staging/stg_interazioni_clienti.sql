@@ -11,13 +11,13 @@ with source as (
 cleaned as (
     select
         codice_cliente,
-        data_interazione,
-        tipo_interazione,
-        motivo,
-        durata_minuti,
-        esito,
-        note,
-        conversione
+        "Data_Interazione" as data_interazione,
+        "Tipo_Interazione" as tipo_interazione,
+        "Motivo" as motivo,
+        "Durata_Minuti" as durata_minuti,
+        "Esito" as esito,
+        "Note" as note,
+        "Conversione" as conversione
     from source
 )
 
