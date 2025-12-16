@@ -53,7 +53,7 @@ Final analytics-ready tables:
 ## Setup & Run
 
 ### Configure Connection
-The `profiles.yaml` is already configured to use:
+The `profiles.yml` is already configured to use:
 - Database: `../data/aida_challenge.duckdb`
 - Schema: `main`
 
