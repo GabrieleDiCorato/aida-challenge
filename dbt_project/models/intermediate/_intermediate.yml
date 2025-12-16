@@ -1,4 +1,398 @@
 version: 2
 
-models: []
-  # Intermediate models documentation and tests will go here
+models:
+  - name: int_customer_policies
+    description: >
+      Customer-level aggregations of policy portfolio data. Combines customer master data
+      with policy holdings to calculate financial metrics, product mix, and channel distribution.
+      One row per customer with policy aggregations.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: nome
+        description: Customer first name
+        tests:
+          - not_null
+
+      - name: cognome
+        description: Customer last name
+        tests:
+          - not_null
+
+      - name: eta
+        description: Customer age in years
+        tests:
+          - not_null
+
+      - name: num_polizze_totali
+        description: Total count of all policies (active and expired)
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_polizze_attive
+        description: Count of currently active policies
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_polizze_totali"
+              config:
+                severity: warn
+
+      - name: num_polizze_scadute
+        description: Count of expired policies
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_prodotti_distinti
+        description: Count of unique product types held by customer
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: premio_annuo_totale
+        description: Total annual premium across all policies (NULL if customer has no policies with premiums)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0 OR premio_annuo_totale IS NULL"
+
+      - name: premio_annuo_medio
+        description: Average annual premium per policy (NULL if no premiums)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0 OR premio_annuo_medio IS NULL"
+
+      - name: massimale_totale
+        description: Total coverage limit across all policies (NULL if no policies have limits)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0 OR massimale_totale IS NULL"
+
+      - name: margine_lordo_totale
+        description: Total gross margin across all policies (can be negative for unprofitable customers)
+
+      - name: loss_ratio_medio
+        description: Average loss ratio across customer's policies
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_prodotti_protezione
+        description: Count of protection-type products (insurance)
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_polizze_totali"
+
+      - name: num_prodotti_investimento
+        description: Count of savings/investment products
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_polizze_totali"
+
+      - name: num_canale_agenziale
+        description: Count of policies acquired through agency network
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_canale_online
+        description: Count of policies acquired through online channel
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: int_customer_claims
+    description: >
+      Customer-level aggregations of claims history. Calculates claim frequency,
+      financial impact, and processing status for each customer. Only includes customers
+      who have filed at least one claim. Grain is one row per customer with claims.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: num_sinistri_totali
+        description: Total count of all claims filed by customer
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+
+      - name: num_prodotti_con_sinistri
+        description: Number of distinct products with claims
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_sinistri_totali"
+
+      - name: num_sinistri_liquidati
+        description: Count of claims that have been settled/paid
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_sinistri_totali"
+
+      - name: num_sinistri_in_lavorazione
+        description: Count of claims currently being processed
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_sinistri_totali"
+
+      - name: num_sinistri_respinti
+        description: Count of claims that were rejected/denied
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_sinistri_totali"
+
+      - name: importo_totale_liquidato
+        description: Total amount paid out for all settled claims
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: importo_medio_liquidato
+        description: Average amount paid per settled claim
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: importo_max_liquidato
+        description: Largest single claim payment
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: ">= importo_medio_liquidato"
+              config:
+                severity: warn
+
+      - name: data_primo_sinistro
+        description: Date of customer's first claim
+        tests:
+          - not_null
+
+      - name: data_ultimo_sinistro
+        description: Date of customer's most recent claim
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= data_primo_sinistro"
+
+      - name: frequenza_sinistri_annua
+        description: Average number of claims per year (total claims / years of history)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+
+  - name: int_customer_interactions
+    description: >
+      Customer-level aggregations of all interaction touchpoints. Tracks engagement patterns,
+      channel preferences, conversion rates, and interaction outcomes. One row per customer
+      who has had at least one interaction.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: num_interazioni_totali
+        description: Total count of all customer interactions
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+
+      - name: num_tipi_interazione
+        description: Number of distinct interaction types used by customer
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 5"
+              config:
+                severity: warn
+
+      - name: num_visite_agente
+        description: Count of in-person agent visits
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_chat_online
+        description: Count of online chat interactions
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_telefonate
+        description: Count of phone call interactions
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_app_mobile
+        description: Count of mobile app interactions
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_email
+        description: Count of email interactions
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_esiti_positivi
+        description: Count of interactions with positive outcomes
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_esiti_negativi
+        description: Count of interactions with negative outcomes
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_esiti_neutrali
+        description: Count of interactions with neutral outcomes
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_conversioni
+        description: Count of interactions that resulted in a conversion (sale/action)
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= num_interazioni_totali"
+
+      - name: tasso_conversione
+        description: Conversion rate (conversions / total interactions)
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 1"
+
+      - name: num_consulenza
+        description: Count of interactions for consultation purposes
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_reclami_interazioni
+        description: Count of interactions for complaint purposes
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_pagamenti
+        description: Count of interactions for premium payment
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_info_prodotto
+        description: Count of interactions requesting product information
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: durata_media_minuti
+        description: Average duration of interactions in minutes (NULL if no duration data, can be 0 if all interactions have 0 duration)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0 OR durata_media_minuti IS NULL OR durata_media_minuti = 0"
+
+      - name: durata_totale_minuti
+        description: Total duration of all interactions in minutes (NULL if no duration data, can be 0 if all interactions have 0 duration)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0 OR durata_totale_minuti IS NULL OR durata_totale_minuti = 0"
+
+      - name: durata_max_minuti
+        description: Longest single interaction duration in minutes (NULL if no duration data, can be 0 if max duration is 0)
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0 OR durata_max_minuti IS NULL OR durata_max_minuti = 0"
+          - dbt_utils.expression_is_true:
+              expression: ">= durata_media_minuti OR durata_max_minuti IS NULL OR durata_media_minuti IS NULL"
+              config:
+                severity: warn
+
+      - name: prima_interazione
+        description: Date of customer's first interaction
+        tests:
+          - not_null
+
+      - name: ultima_interazione
+        description: Date of customer's most recent interaction
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= prima_interazione"
+
+      - name: giorni_tra_prima_ultima
+        description: Number of days between first and last interaction
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

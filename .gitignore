@@ -224,3 +224,5 @@ dbt_project/.user.yml
 # IDE
 .vscode/
 .idea/
+
+plan.md
