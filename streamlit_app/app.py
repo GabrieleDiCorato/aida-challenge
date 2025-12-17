@@ -14,6 +14,13 @@ from data_loader import (
     load_channel_performance,
     load_product_performance,
     load_interaction_summary,
+    load_raw_clienti,
+    load_raw_polizze,
+    load_raw_sinistri,
+    load_raw_reclami,
+    load_raw_abitazioni,
+    load_raw_interazioni_clienti,
+    load_raw_competitor_prodotti,
 )
 
 # Page configuration
@@ -114,8 +121,9 @@ st.sidebar.metric("Avg Engagement", f"{filtered_customers['engagement_score'].me
 st.sidebar.metric("Avg Churn Risk", f"{filtered_customers['churn_probability'].mean():.1%}")
 
 # Main content tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
     [
+        "🔍 Data Exploration",
         "👥 Demographics",
         "💼 Portfolio",
         "💰 Customer Value",
@@ -126,6 +134,193 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
         "🎯 Segmentation",
     ]
 )
+
+# Tab 0: Data Exploration (Staging Layer)
+with tab0:
+    st.header("🔍 Raw Data Exploration - Staging Layer")
+    st.markdown(
+        """
+        This tab provides a detailed exploration of the raw source tables before transformation.
+        Select a table below to explore its structure, data types, null values, and distributions.
+        """
+    )
+
+    # Create sub-tabs for each raw table
+    subtab1, subtab2, subtab3, subtab4, subtab5, subtab6, subtab7 = st.tabs(
+        [
+            "Clienti",
+            "Polizze",
+            "Sinistri",
+            "Reclami",
+            "Abitazioni",
+            "Interazioni",
+            "Competitor",
+        ]
+    )
+
+    def explore_dataframe(df, table_name):
+        """Helper function to explore a dataframe."""
+        st.subheader(f"📊 {table_name} Overview")
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Rows", f"{len(df):,}")
+        with col2:
+            st.metric("Total Columns", f"{len(df.columns):,}")
+        with col3:
+            st.metric("Memory Usage", f"{df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
+        with col4:
+            duplicate_rows = df.duplicated().sum()
+            st.metric("Duplicate Rows", f"{duplicate_rows:,}")
+
+        # Data Types
+        st.subheader("📋 Column Data Types")
+        dtype_df = pd.DataFrame(
+            {
+                "Column": df.dtypes.index,
+                "Data Type": df.dtypes.values.astype(str),
+                "Non-Null Count": [df[col].count() for col in df.columns],
+                "Null Count": [df[col].isna().sum() for col in df.columns],
+                "Null %": [f"{df[col].isna().sum() / len(df) * 100:.1f}%" for col in df.columns],
+            }
+        )
+        st.dataframe(dtype_df, use_container_width=True, height=400)
+
+        # Null Value Heatmap
+        st.subheader("🔥 Null Values Heatmap")
+        null_data = df.isnull().sum()
+        null_data = null_data[null_data > 0].sort_values(ascending=False)
+
+        if len(null_data) > 0:
+            fig_null = px.bar(
+                x=null_data.values,
+                y=null_data.index,
+                orientation="h",
+                title="Columns with Missing Values",
+                labels={"x": "Number of Null Values", "y": "Column"},
+                color=null_data.values,
+                color_continuous_scale="Reds",
+            )
+            fig_null.update_layout(showlegend=False, height=max(400, len(null_data) * 25))
+            st.plotly_chart(fig_null, use_container_width=True)
+        else:
+            st.success("✅ No missing values found in this table!")
+
+        # Sample Data
+        st.subheader("📄 Sample Data (First 100 rows)")
+        st.dataframe(df.head(100), use_container_width=True, height=400)
+
+        # Numeric Columns Distribution
+        numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+        if numeric_cols:
+            st.subheader("📊 Numeric Columns - Descriptive Statistics")
+            st.dataframe(df[numeric_cols].describe(), use_container_width=True)
+
+            st.subheader("📈 Numeric Columns - Distributions")
+            selected_numeric = st.multiselect(
+                "Select numeric columns to visualize",
+                numeric_cols,
+                default=numeric_cols[:3] if len(numeric_cols) >= 3 else numeric_cols,
+                key=f"numeric_{table_name}",
+            )
+
+            if selected_numeric:
+                cols_per_row = 2
+                for i in range(0, len(selected_numeric), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    for j, col_name in enumerate(selected_numeric[i : i + cols_per_row]):
+                        with cols[j]:
+                            fig = px.histogram(
+                                df,
+                                x=col_name,
+                                title=f"{col_name} Distribution",
+                                labels={col_name: col_name},
+                                color_discrete_sequence=["#0173B2"],
+                            )
+                            fig.update_layout(showlegend=False, height=300)
+                            st.plotly_chart(fig, use_container_width=True)
+
+        # Categorical Columns
+        categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+        if categorical_cols:
+            st.subheader("🏷️ Categorical Columns - Value Counts")
+            selected_categorical = st.selectbox(
+                "Select a categorical column to explore",
+                categorical_cols,
+                key=f"cat_{table_name}",
+            )
+
+            if selected_categorical:
+                value_counts = df[selected_categorical].value_counts().head(20)
+
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    fig_cat = px.bar(
+                        x=value_counts.values,
+                        y=value_counts.index,
+                        orientation="h",
+                        title=f"Top 20 Values - {selected_categorical}",
+                        labels={"x": "Count", "y": selected_categorical},
+                        color=value_counts.values,
+                        color_continuous_scale="Viridis",
+                    )
+                    fig_cat.update_layout(showlegend=False, height=500)
+                    st.plotly_chart(fig_cat, use_container_width=True)
+
+                with col2:
+                    st.metric("Unique Values", f"{df[selected_categorical].nunique():,}")
+                    st.metric("Most Common", value_counts.index[0])
+                    st.metric("Most Common Count", f"{value_counts.values[0]:,}")
+                    st.metric("Most Common %", f"{value_counts.values[0] / len(df) * 100:.1f}%")
+
+        # Date Columns
+        date_cols = df.select_dtypes(include=["datetime64"]).columns.tolist()
+        if date_cols:
+            st.subheader("📅 Date Columns - Time Range")
+            for date_col in date_cols:
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric(f"{date_col} - Min", str(df[date_col].min())[:10])
+                with col2:
+                    st.metric(f"{date_col} - Max", str(df[date_col].max())[:10])
+                with col3:
+                    date_range = (df[date_col].max() - df[date_col].min()).days
+                    st.metric(f"{date_col} - Range", f"{date_range:,} days")
+
+    # Clienti table
+    with subtab1:
+        df_raw_clienti = load_raw_clienti()
+        explore_dataframe(df_raw_clienti, "Clienti")
+
+    # Polizze table
+    with subtab2:
+        df_raw_polizze = load_raw_polizze()
+        explore_dataframe(df_raw_polizze, "Polizze")
+
+    # Sinistri table
+    with subtab3:
+        df_raw_sinistri = load_raw_sinistri()
+        explore_dataframe(df_raw_sinistri, "Sinistri")
+
+    # Reclami table
+    with subtab4:
+        df_raw_reclami = load_raw_reclami()
+        explore_dataframe(df_raw_reclami, "Reclami")
+
+    # Abitazioni table
+    with subtab5:
+        df_raw_abitazioni = load_raw_abitazioni()
+        explore_dataframe(df_raw_abitazioni, "Abitazioni")
+
+    # Interazioni Clienti table
+    with subtab6:
+        df_raw_interazioni = load_raw_interazioni_clienti()
+        explore_dataframe(df_raw_interazioni, "Interazioni Clienti")
+
+    # Competitor Prodotti table
+    with subtab7:
+        df_raw_competitor = load_raw_competitor_prodotti()
+        explore_dataframe(df_raw_competitor, "Competitor Prodotti")
 
 # Tab 1: Customer Demographics
 with tab1:

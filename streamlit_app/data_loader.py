@@ -185,3 +185,53 @@ def load_interaction_summary():
         ORDER BY interaction_count DESC
     """
     ).df()
+
+
+# Raw staging table loaders - 1:1 with source tables
+@st.cache_data(ttl=3600)
+def load_raw_clienti():
+    """Load raw clienti table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.clienti").df()
+
+
+@st.cache_data(ttl=3600)
+def load_raw_polizze():
+    """Load raw polizze table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.polizze").df()
+
+
+@st.cache_data(ttl=3600)
+def load_raw_sinistri():
+    """Load raw sinistri table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.sinistri").df()
+
+
+@st.cache_data(ttl=3600)
+def load_raw_reclami():
+    """Load raw reclami table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.reclami").df()
+
+
+@st.cache_data(ttl=3600)
+def load_raw_abitazioni():
+    """Load raw abitazioni table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.abitazioni").df()
+
+
+@st.cache_data(ttl=3600)
+def load_raw_interazioni_clienti():
+    """Load raw interazioni_clienti table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.interazioni_clienti").df()
+
+
+@st.cache_data(ttl=3600)
+def load_raw_competitor_prodotti():
+    """Load raw competitor_prodotti table."""
+    con = get_db_connection()
+    return con.execute("SELECT * FROM main.competitor_prodotti").df()
