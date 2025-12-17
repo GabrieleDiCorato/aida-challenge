@@ -20,6 +20,7 @@ analysis = [
     "seaborn>=0.13.0",
     "plotly>=5.18.0",
     "scikit-learn>=1.4.0",
+    "kaleido>=1.2.0",
 ]
 
 ai = [
@@ -57,7 +58,9 @@ dbt-docs-generate = "aida_challenge.dbt_commands:dbt_docs_generate"
 dbt-docs-serve = "aida_challenge.dbt_commands:dbt_docs_serve"
 
 [tool.uv]
-dev-dependencies = []
+dev-dependencies = [
+    "pre-commit>=4.5.0",
+]
 
 [tool.ruff]
 line-length = 100
