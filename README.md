@@ -53,6 +53,20 @@ cp dbt_project/profiles.yml.example ~/.dbt/profiles.yml
 uv run dbt-debug
 ```
 
+### Dependency Management
+
+Choose the installation profile that matches your needs:
+
+```bash
+# Install everything (Recommended)
+uv sync --all-extras
+
+# Install specific components
+uv sync --extra analysis    # For Jupyter notebooks & analysis
+uv sync --extra dashboard   # For Streamlit dashboard
+uv sync --extra dev         # For development (linting, testing)
+```
+
 ## Usage
 
 ### Running dbt Transformations
