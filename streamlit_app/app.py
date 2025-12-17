@@ -202,7 +202,7 @@ with tab0:
                 color_continuous_scale="Reds",
             )
             fig_null.update_layout(showlegend=False, height=max(400, len(null_data) * 25))
-            st.plotly_chart(fig_null, use_container_width=True)
+            st.plotly_chart(fig_null, use_container_width=True, key=f"null_chart_{table_name}")
         else:
             st.success("✅ No missing values found in this table!")
 
@@ -238,7 +238,9 @@ with tab0:
                                 color_discrete_sequence=["#0173B2"],
                             )
                             fig.update_layout(showlegend=False, height=300)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(
+                                fig, use_container_width=True, key=f"hist_{table_name}_{col_name}"
+                            )
 
         # Categorical Columns
         categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
@@ -265,7 +267,11 @@ with tab0:
                         color_continuous_scale="Viridis",
                     )
                     fig_cat.update_layout(showlegend=False, height=500)
-                    st.plotly_chart(fig_cat, use_container_width=True)
+                    st.plotly_chart(
+                        fig_cat,
+                        use_container_width=True,
+                        key=f"cat_chart_{table_name}_{selected_categorical}",
+                    )
 
                 with col2:
                     st.metric("Unique Values", f"{df[selected_categorical].nunique():,}")
