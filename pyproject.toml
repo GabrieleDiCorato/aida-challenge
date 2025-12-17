@@ -23,6 +23,13 @@ analysis = [
     "kaleido>=1.2.0",
 ]
 
+dashboard = [
+    "streamlit>=1.28.0",
+    "plotly>=5.18.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+]
+
 ai = [
 ]
 
