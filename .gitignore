@@ -207,22 +207,29 @@ marimo/_lsp/
 __marimo__/
 
 
-# Data files
-#data/
+# ===========================================
+# Project-specific ignores
+# ===========================================
+
+# Data files (DuckDB database and raw CSV data)
 data/*.duckdb
 data/*.duckdb.wal
 data/raw/
 
-# dbt
+# dbt artifacts
 dbt_project/target/
 dbt_project/dbt_packages/
 dbt_project/logs/*.log
-dbt_project/profiles.yml
 dbt_project/.user.yml
+src/aida_challenge/dbt_project/target/
+src/aida_challenge/dbt_project/dbt_packages/
+src/aida_challenge/dbt_project/logs/*.log
+src/aida_challenge/dbt_project/profiles.yml
+src/aida_challenge/dbt_project/.user.yml
 .user.yml
 
-# IDE
-.vscode/
-.idea/
+# Streamlit
+src/aida_challenge/streamlit_app/__pycache__/
 
+# Project planning (personal notes)
 plan.md
