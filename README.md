@@ -123,6 +123,51 @@ uv run mypy src
 uv run pytest
 ```
 
+### Sales Chatbot (AI-Powered)
+
+The project includes an AI-powered sales assistant that generates personalized pitches for insurance products.
+
+#### Setup
+
+1. **Get an OpenRouter API Key** (free) from [OpenRouter](https://openrouter.ai/keys)
+
+2. **Configure environment**:
+```bash
+# Copy example env file
+cp .env.example .env
+
+# Edit .env and add your OpenRouter API key
+OPENROUTER_API_KEY=your_key_here
+```
+
+3. **Generate document embeddings** (required once):
+```bash
+uv run embed-documents
+```
+
+4. **Run the Streamlit app**:
+```bash
+uv run --extra dashboard streamlit run src/aida_challenge/streamlit_app/pages/sales_chatbot.py
+```
+
+#### Features
+
+- **Customer 360° View**: Complete customer profile with demographics, policies, interactions, claims
+- **Multi-Agent System**: Uses Google ADK with OpenRouter's **DeepSeek R1** (free) for intelligent pitch generation
+- **RAG-Powered**: Retrieves relevant contract sections using vector similarity search (DuckDB VSS)
+- **Structured Output**: Generates pitches with customer summary, selling points, objection handling, and next steps
+
+#### Architecture
+
+The system uses a sequential multi-agent workflow:
+1. **Customer Analyst Agent** - Analyzes the customer profile to identify needs and opportunities
+2. **RAG Agent** - Retrieves relevant product contract sections from embedded documents
+3. **Pitch Generator Agent** - Creates a personalized sales pitch in Italian
+
+All agents use **DeepSeek R1** via OpenRouter (completely free, no rate limits on free tier).
+
+Embeddings use **text-embedding-3-small** via OpenRouter.
+
 ## Development Workflow
 
 1. **Explore data** in Jupyter notebooks (`notebooks/exploratory/`) or DuckDB UI (`uv run explore-db`)

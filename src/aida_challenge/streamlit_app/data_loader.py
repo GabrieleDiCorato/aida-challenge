@@ -236,3 +236,169 @@ def load_raw_competitor_prodotti():
     """Load raw competitor_prodotti table."""
     con = get_db_connection()
     return con.execute("SELECT * FROM main.competitor_prodotti").df()
+
+
+@st.cache_data(ttl=3600)
+def get_customer_list():
+    """Get list of all customers for dropdown selection."""
+    con = get_db_connection()
+    return con.execute(
+        """
+        SELECT
+            codice_cliente,
+            Nome || ' ' || Cognome as full_name,
+            Professione as profession,
+            "Luogo di Residenza" as city
+        FROM main.clienti
+        ORDER BY Cognome, Nome
+    """
+    ).df()
+
+
+def get_customer_full_profile(codice_cliente: int) -> dict:
+    """
+    Get complete 360° customer profile for sales pitch generation.
+
+    Returns a dictionary with:
+    - demographics: Customer personal info and scores
+    - policies: List of active and expired policies
+    - interactions: Recent interaction history
+    - claims: Claims history
+    - complaints: Complaints history
+    - housing: Housing information (if available)
+    """
+    con = get_db_connection()
+
+    # Convert to native Python int to avoid numpy type issues
+    codice_cliente = int(codice_cliente)
+
+    # Customer demographics from dim_customers (mart)
+    demographics = con.execute(
+        """
+        SELECT
+            codice_cliente,
+            nome,
+            cognome,
+            eta,
+            professione,
+            reddito,
+            stato_civile,
+            agenzia,
+            zona_residenza,
+            num_prodotti_distinti,
+            num_polizze_totali,
+            num_polizze_attive,
+            premio_annuo_totale,
+            premio_annuo_medio,
+            margine_lordo_totale,
+            num_prodotti_protezione,
+            num_prodotti_investimento,
+            engagement_score,
+            churn_probability,
+            clv_stimato,
+            satisfaction_score,
+            potenziale_crescita,
+            num_interazioni_totali,
+            num_conversioni,
+            tasso_conversione,
+            num_sinistri_totali,
+            importo_totale_liquidato,
+            frequenza_sinistri_annua,
+            segmento_cliente,
+            classificazione_rischio,
+            classificazione_valore
+        FROM aida_challenge.main_marts.dim_customers
+        WHERE codice_cliente = ?
+    """,
+        [codice_cliente],
+    ).df()
+
+    # Active policies
+    policies = con.execute(
+        """
+        SELECT
+            prodotto,
+            area_bisogno,
+            stato_polizza,
+            premio_totale_annuo,
+            massimale,
+            canale_acquisizione,
+            data_emissione,
+            data_scadenza,
+            loss_ratio,
+            margine_lordo
+        FROM aida_challenge.main_staging.stg_polizze
+        WHERE codice_cliente = ?
+        ORDER BY stato_polizza DESC, data_emissione DESC
+    """,
+        [codice_cliente],
+    ).df()
+
+    # Interaction history (last 20)
+    interactions = con.execute(
+        """
+        SELECT
+            tipo_interazione,
+            motivo,
+            esito,
+            conversione,
+            durata_minuti,
+            data_interazione
+        FROM aida_challenge.main_staging.stg_interazioni_clienti
+        WHERE codice_cliente = ?
+        ORDER BY data_interazione DESC
+        LIMIT 20
+    """,
+        [codice_cliente],
+    ).df()
+
+    # Claims history
+    claims = con.execute(
+        """
+        SELECT
+            prodotto,
+            sinistro,
+            importo_liquidato,
+            stato_liquidazione,
+            data_sinistro
+        FROM aida_challenge.main_staging.stg_sinistri
+        WHERE codice_cliente = ?
+        ORDER BY data_sinistro DESC
+    """,
+        [codice_cliente],
+    ).df()
+
+    # Complaints
+    complaints = con.execute(
+        """
+        SELECT
+            reclami_e_info as reclami_info,
+            prodotto,
+            area_bisogno
+        FROM aida_challenge.main_staging.stg_reclami
+        WHERE codice_cliente = ?
+    """,
+        [codice_cliente],
+    ).df()
+
+    # Housing info
+    housing = con.execute(
+        """
+        SELECT
+            indirizzo,
+            metratura,
+            sistema_allarme
+        FROM aida_challenge.main_staging.stg_abitazioni
+        WHERE codice_cliente = ?
+    """,
+        [codice_cliente],
+    ).df()
+
+    return {
+        "demographics": demographics.to_dict(orient="records")[0] if len(demographics) > 0 else {},
+        "policies": policies.to_dict(orient="records"),
+        "interactions": interactions.to_dict(orient="records"),
+        "claims": claims.to_dict(orient="records"),
+        "complaints": complaints.to_dict(orient="records"),
+        "housing": housing.to_dict(orient="records"),
+    }
