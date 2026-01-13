@@ -1,8 +1,0 @@
-aida_insurance:
-  target: dev
-  outputs:
-    dev:
-      type: duckdb
-      path: "../data/aida_challenge.duckdb"
-      schema: main
-      threads: 4

@@ -221,6 +221,7 @@ dbt_project/target/
 dbt_project/dbt_packages/
 dbt_project/logs/*.log
 dbt_project/.user.yml
+dbt_project/profiles.yml
 src/aida_challenge/dbt_project/target/
 src/aida_challenge/dbt_project/dbt_packages/
 src/aida_challenge/dbt_project/logs/*.log
