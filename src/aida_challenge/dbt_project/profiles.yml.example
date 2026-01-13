@@ -1,0 +1,8 @@
+aida_insurance:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # Relative path from dbt_project directory (3 levels up to project root)
+      path: "../../../data/aida_challenge.duckdb"
+      schema: main

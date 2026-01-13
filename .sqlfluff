@@ -6,3 +6,4 @@ exclude_rules = RF06
 
 [sqlfluff:templater:dbt]
 project_dir = dbt_project/
+profiles_dir = dbt_project/
