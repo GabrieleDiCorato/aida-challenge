@@ -129,3 +129,36 @@ sources:
             description: "Customer rating"
           - name: Quota_Mercato_Perc
             description: "Market share percentage"
+
+  - name: analytics
+    description: "Analytics and enriched data from external analysis"
+    schema: main
+    tables:
+      - name: client_nba_enhanced
+        description: "Customer NBA (Next Best Action) recommendations with strategic segments and product ownership flags"
+        columns:
+          - name: codice_cliente
+            description: "Customer identifier - links to customers table"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
+          - name: strategic_segment
+            description: "Strategic customer segment for targeted marketing"
+          - name: nba_recommendation
+            description: "Next Best Action - recommended product(s) to pitch"
+          - name: urgency_tier
+            description: "Urgency level for the recommendation (LOW, MEDIUM, HIGH, CRITICAL)"
+          - name: cluster
+            description: "Customer cluster assignment from segmentation analysis"
+          - name: conversion_rate
+            description: "Historical conversion rate for this customer"
+          - name: casa_owned
+            description: "Flag indicating if customer owns Casa (home) insurance"
+          - name: salute_owned
+            description: "Flag indicating if customer owns Salute (health) insurance"
+          - name: investimento_owned
+            description: "Flag indicating if customer owns investment products"
+          - name: pip_owned
+            description: "Flag indicating if customer owns PIP (pension) products"

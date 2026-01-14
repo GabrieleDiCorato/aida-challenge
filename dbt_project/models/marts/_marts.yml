@@ -26,3 +26,97 @@ models:
           - relationships:
               to: ref('dim_customers')
               field: codice_cliente
+
+  - name: mart_nba_recommendations
+    description: "Next Best Action recommendations for customer pitching - combines customer data with NBA analysis to prioritize sales opportunities"
+    columns:
+      - name: codice_cliente
+        description: "Primary key - customer identifier"
+        tests:
+          - unique
+          - not_null
+
+      - name: nome
+        description: "Customer first name"
+
+      - name: cognome
+        description: "Customer last name"
+
+      - name: segmento_strategico
+        description: "Strategic customer segment combining value, life stage, and product ownership"
+        tests:
+          - not_null
+
+      - name: raccomandazione_nba
+        description: "Next Best Action - recommended product(s) to pitch"
+        tests:
+          - not_null
+
+      - name: livello_urgenza
+        description: "Urgency level for the recommendation"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+
+      - name: punteggio_urgenza
+        description: "Numeric score for urgency (1=LOW, 2=MEDIUM, 3=HIGH, 4=CRITICAL)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2, 3, 4]
+
+      - name: strategia_pitch
+        description: "Recommended approach for customer engagement"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Ready to Pitch', 'Retention First', 'Nurture & Pitch', 'Monitor']
+
+      - name: gap_prodotti
+        description: "Number of key products the customer does not own (max 4)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 4
+
+      - name: possiede_casa
+        description: "Flag: 1 if customer owns Casa (home) insurance"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_salute
+        description: "Flag: 1 if customer owns Salute (health) insurance"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_investimento
+        description: "Flag: 1 if customer owns investment products"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_pip
+        description: "Flag: 1 if customer owns PIP (pension) products"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+      - name: clv_stimato
+        description: "Estimated customer lifetime value"
+
+      - name: engagement_score
+        description: "Customer engagement score (0-100)"
+
+      - name: churn_probability
+        description: "Probability of customer churn (0-1)"
+
+      - name: tasso_conversione_nba
+        description: "Historical conversion rate from NBA analysis"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1

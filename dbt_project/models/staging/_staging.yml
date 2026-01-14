@@ -88,3 +88,72 @@ models:
         description: "Date of interaction"
         tests:
           - not_null
+
+  - name: stg_client_nba_enhanced
+    description: "Cleaned NBA (Next Best Action) recommendations from external analytics - excludes duplicated customer attributes"
+    columns:
+      - name: codice_cliente
+        description: "Primary key - customer identifier"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: segmento_strategico
+        description: "Strategic customer segment combining value, life stage, and product ownership"
+        tests:
+          - not_null
+
+      - name: raccomandazione_nba
+        description: "Next Best Action - recommended product(s) to pitch to the customer"
+        tests:
+          - not_null
+
+      - name: livello_urgenza
+        description: "Urgency level for acting on the recommendation"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+
+      - name: cluster
+        description: "Customer cluster assignment from segmentation analysis"
+        tests:
+          - not_null
+
+      - name: tasso_conversione_nba
+        description: "Historical conversion rate for this customer (0-1)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+      - name: possiede_casa
+        description: "Binary flag: 1 if customer owns Casa (home) insurance, 0 otherwise"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_salute
+        description: "Binary flag: 1 if customer owns Salute (health) insurance, 0 otherwise"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_investimento
+        description: "Binary flag: 1 if customer owns investment products, 0 otherwise"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_pip
+        description: "Binary flag: 1 if customer owns PIP (pension) products, 0 otherwise"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
