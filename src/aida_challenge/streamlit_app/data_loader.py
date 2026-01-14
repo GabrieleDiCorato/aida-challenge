@@ -255,6 +255,57 @@ def get_customer_list():
     ).df()
 
 
+@st.cache_data(ttl=3600)
+def get_nba_recommendations():
+    """
+    Get Next Best Action recommendations ordered by priority.
+
+    Returns customers with their recommended products, ordered by urgency and CLV.
+    This data comes from the mart_nba_recommendations table which integrates
+    external NBA analysis results.
+    """
+    con = get_db_connection()
+    return con.execute(
+        """
+        SELECT
+            codice_cliente,
+            nome,
+            cognome,
+            nome || ' ' || cognome as full_name,
+            eta,
+            professione,
+            zona_residenza,
+            -- NBA recommendation
+            raccomandazione_nba,
+            livello_urgenza,
+            strategia_pitch,
+            segmento_strategico,
+            -- Customer metrics
+            clv_stimato,
+            engagement_score,
+            churn_probability,
+            satisfaction_score,
+            segmento_cliente,
+            classificazione_valore,
+            -- Portfolio info
+            num_prodotti_distinti,
+            num_polizze_attive,
+            premio_annuo_totale,
+            gap_prodotti,
+            -- Product ownership
+            possiede_casa,
+            possiede_salute,
+            possiede_investimento,
+            possiede_pip,
+            -- Scoring
+            punteggio_urgenza,
+            tasso_conversione_nba
+        FROM aida_challenge.main_marts.mart_nba_recommendations
+        ORDER BY punteggio_urgenza DESC, clv_stimato DESC
+    """
+    ).df()
+
+
 def get_customer_full_profile(codice_cliente: int) -> dict:
     """
     Get complete 360° customer profile for sales pitch generation.

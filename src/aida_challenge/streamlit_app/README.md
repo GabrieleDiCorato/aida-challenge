@@ -2,11 +2,11 @@
 
 ## Overview
 
-This Streamlit dashboard provides interactive data visualizations and analytics for the AIDA Challenge insurance dataset.
+This Streamlit dashboard provides interactive data visualizations and analytics for the AIDA Challenge insurance dataset, plus an AI-powered Sales Assistant with Next Best Action recommendations.
 
 ## Features
 
-### 8 Interactive Tabs:
+### Main Dashboard - 8 Interactive Tabs:
 
 1. **Demographics** - Customer age, income, and profession distributions
 2. **Portfolio** - Policy analysis and premium distributions by product/need area
@@ -16,6 +16,14 @@ This Streamlit dashboard provides interactive data visualizations and analytics 
 6. **Lifecycle** - Customer retention, tenure, and lifecycle stage analysis
 7. **Channels** - Acquisition channel performance and conversion rates
 8. **Segmentation** - Deep dive into customer clusters and characteristics
+
+### Sales Assistant (Separate Page)
+
+- **Next Best Action Engine**: Priority-ordered customer list with product recommendations
+- **AI Pitch Generation**: Personalized sales pitches using multi-agent AI system
+- **Customer 360°**: Complete customer profiles with history, interactions, and claims
+- **Smart Filtering**: Filter by urgency level and pitch strategy
+- **RAG-Powered**: Contract information retrieval using vector similarity search
 
 ### Interactive Features:
 
@@ -50,20 +58,29 @@ uv run load-raw-data
 
 ## Running the Dashboard
 
-### Option 1: From Project Root (Recommended)
+### Recommended: Using UV Script
 
 ```bash
-uv run streamlit run src/aida_challenge/streamlit_app/app.py
+# Launch the complete dashboard (easiest method)
+uv run streamlit-app
 ```
 
-### Option 2: From streamlit_app Directory
+### Alternative Options:
+
+#### Option 1: Direct Streamlit Command
+
+```bash
+uv run --extra dashboard streamlit run src/aida_challenge/streamlit_app/app.py
+```
+
+#### Option 2: From streamlit_app Directory
 
 ```bash
 cd src/aida_challenge/streamlit_app
 uv run streamlit run app.py
 ```
 
-### Option 3: Using Activated Virtual Environment
+#### Option 3: Using Activated Virtual Environment
 
 ```bash
 # First activate the environment
@@ -81,7 +98,9 @@ The dashboard will automatically open in your default browser at `http://localho
 
 ## Using the Dashboard
 
-### Filters (Sidebar)
+### Main Dashboard
+
+#### Filters (Sidebar)
 
 - **Customer Cluster**: Filter by specific customer segments
 - **Age Range**: Select age range using the slider
@@ -89,12 +108,38 @@ The dashboard will automatically open in your default browser at `http://localho
 
 All visualizations and metrics update automatically based on your filter selections.
 
-### Navigation
+#### Navigation
 
 Use the tabs at the top to switch between different analysis views:
 - Click on any tab to view specific insights
 - All tabs respect the filters set in the sidebar
 - Charts are interactive - hover for details, zoom, pan, etc.
+
+### Sales Assistant
+
+Access the **Sales Chatbot** page from the sidebar navigation:
+
+1. **Priority List (Sidebar)**:
+   - View customers ordered by urgency and CLV
+   - Apply filters for urgency level and pitch strategy
+   - Select a customer to view details
+
+2. **Customer Details (Left Panel)**:
+   - NBA context: urgency, strategy, conversion rate
+   - Product portfolio and gaps
+   - Complete customer profile
+
+3. **Pitch Generation (Right Panel)**:
+   - Click "Generate Pitch" to create a personalized sales pitch
+   - View structured pitch with selling points, objection handling, and next steps
+   - Pitches are generated using AI with customer-specific context
+
+#### Prerequisites for Sales Assistant
+
+Before using the Sales Assistant:
+1. Set up OpenRouter API key in `.env` file
+2. Run `uv run embed-documents` to generate document embeddings
+3. Ensure dbt models have been built (`uv run dbt-build`)
 
 ## Technologies Used
 

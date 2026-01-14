@@ -9,6 +9,7 @@ This Streamlit page provides an interface for salespeople to:
 
 import streamlit as st
 import pandas as pd
+import random
 from pathlib import Path
 import sys
 
@@ -16,8 +17,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from aida_challenge.streamlit_app.data_loader import (
-    get_customer_list,
     get_customer_full_profile,
+    get_nba_recommendations,
 )
 from aida_challenge.agents import generate_sales_pitch, SalesPitch
 
@@ -67,6 +68,27 @@ st.markdown(
         background-color: #1f77b4;
         color: white;
     }
+    .nba-item {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 0.8rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid #2ecc71;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .nba-item:hover {
+        background-color: #f0f8ff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .nba-item.selected {
+        background-color: #e3f2fd;
+        border-left-color: #1f77b4;
+    }
+    .urgency-critical { border-left-color: #dc3545 !important; }
+    .urgency-high { border-left-color: #fd7e14 !important; }
+    .urgency-medium { border-left-color: #ffc107 !important; }
+    .urgency-low { border-left-color: #28a745 !important; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -288,69 +310,246 @@ def render_pitch(pitch: SalesPitch) -> None:
         st.text(pitch.raw_response)
 
 
+def generate_fake_email(full_name: str, customer_id: int) -> str:
+    """Generate a fake email address based on customer name."""
+    # Clean and format name
+    parts = full_name.lower().split()
+    if len(parts) >= 2:
+        email_name = f"{parts[0]}.{parts[1]}"
+    else:
+        email_name = parts[0] if parts else "cliente"
+
+    # Use customer ID for domain variety
+    random.seed(int(customer_id))
+    domains = ["email.com", "mail.it", "posta.it", "example.com", "contact.it"]
+    domain = random.choice(domains)
+
+    return f"📧 {email_name}@{domain}"
+
+
+def generate_fake_phone(customer_id: int) -> str:
+    """Generate a fake Italian phone number."""
+    random.seed(int(customer_id))
+
+    # Generate Italian mobile number (333-339, 340-349, 360-369, 380-389, 390-399)
+    prefix = random.choice(
+        [
+            333,
+            334,
+            335,
+            336,
+            337,
+            338,
+            339,
+            340,
+            341,
+            342,
+            343,
+            344,
+            345,
+            346,
+            347,
+            348,
+            349,
+            360,
+            361,
+            362,
+            363,
+            366,
+            368,
+            369,
+            380,
+            383,
+            388,
+            389,
+            390,
+            391,
+            392,
+            393,
+            397,
+            398,
+            399,
+        ]
+    )
+
+    # Generate 7 remaining digits
+    number = random.randint(1000000, 9999999)
+
+    return f"📞 +39 {prefix} {number}"
+
+
 def main():
     """Main application."""
-    st.title("🤖 Sales Assistant")
-    st.markdown("*Assistente AI per la generazione di pitch di vendita personalizzati*")
+    # Initialize session state
+    if "selected_nba_index" not in st.session_state:
+        st.session_state["selected_nba_index"] = None
+    if "show_pitch_panel" not in st.session_state:
+        st.session_state["show_pitch_panel"] = False
 
-    # Sidebar for selection
+    # Header with title and toggle button
+    col_title, col_button = st.columns([3, 1])
+    with col_title:
+        st.title("🤖 Sales Assistant")
+        st.markdown("*Clienti prioritari con raccomandazioni Next Best Action*")
+    with col_button:
+        st.write("")  # Spacer
+        if st.button(
+            "📝 Pitch" if not st.session_state["show_pitch_panel"] else "❌ Chiudi",
+            type="secondary" if not st.session_state["show_pitch_panel"] else "primary",
+            use_container_width=True,
+        ):
+            st.session_state["show_pitch_panel"] = not st.session_state["show_pitch_panel"]
+
+    # Sidebar for NBA priority list
     with st.sidebar:
-        st.header("📋 Selezione")
+        st.header("🎯 Lista Priorità NBA")
 
-        # Load customer list
+        # Load NBA recommendations
         try:
-            customers_df = get_customer_list()
+            nba_df = get_nba_recommendations()
 
-            # Create searchable customer selector
-            st.subheader("👤 Cliente")
-            customer_options = customers_df.apply(
-                lambda x: f"{x['full_name']} ({x['profession']}, {x['city']})",
-                axis=1,
-            ).tolist()
+            if len(nba_df) == 0:
+                st.warning("Nessuna raccomandazione NBA disponibile.")
+                return
 
-            selected_customer_idx = st.selectbox(
-                "Seleziona cliente",
-                options=range(len(customer_options)),
-                format_func=lambda x: customer_options[x],
-                key="customer_selector",
+            # Filter controls
+            st.subheader("🔍 Filtri")
+
+            # Urgency filter
+            urgency_levels = ["Tutti"] + sorted(
+                nba_df["livello_urgenza"].unique().tolist(), reverse=True
+            )
+            selected_urgency = st.selectbox(
+                "Livello Urgenza",
+                options=urgency_levels,
+                key="urgency_filter",
             )
 
-            selected_customer_id = customers_df.iloc[selected_customer_idx]["codice_cliente"]
+            # Strategy filter
+            strategies = ["Tutte"] + nba_df["strategia_pitch"].unique().tolist()
+            selected_strategy = st.selectbox(
+                "Strategia Pitch",
+                options=strategies,
+                key="strategy_filter",
+            )
+
+            # Apply filters
+            filtered_df = nba_df.copy()
+            if selected_urgency != "Tutti":
+                filtered_df = filtered_df[filtered_df["livello_urgenza"] == selected_urgency]
+            if selected_strategy != "Tutte":
+                filtered_df = filtered_df[filtered_df["strategia_pitch"] == selected_strategy]
+
+            st.divider()
+
+            # Display filtered count
+            st.caption(f"📊 {len(filtered_df)} clienti trovati")
+
+            # Create clickable customer list
+            st.subheader("👥 Clienti Prioritari")
+
+            # Use radio buttons for selection
+            if len(filtered_df) > 0:
+                # Prepare data for display table
+                display_data = []
+                for idx, row in filtered_df.iterrows():
+                    urgency_emoji = {
+                        "CRITICAL": "🔴",
+                        "HIGH": "🟠",
+                        "MEDIUM": "🟡",
+                        "LOW": "🟢",
+                    }.get(row["livello_urgenza"], "⚪")
+
+                    # Generate random contact channel using customer ID as seed for consistency
+                    # Convert to native Python int to avoid numpy type issues
+                    customer_id = int(row["codice_cliente"])
+                    random.seed(customer_id)
+                    is_email = random.choice([True, False])
+
+                    if is_email:
+                        contatto = generate_fake_email(row["full_name"], customer_id)
+                    else:
+                        contatto = generate_fake_phone(customer_id)
+
+                    display_data.append(
+                        {
+                            "Cliente": row["full_name"],
+                            "Priorità": f"{urgency_emoji} {row['livello_urgenza']}",
+                            "Contatto": contatto,
+                            "Prodotto": (
+                                row["raccomandazione_nba"][:20] + "..."
+                                if len(row["raccomandazione_nba"]) > 20
+                                else row["raccomandazione_nba"]
+                            ),
+                        }
+                    )
+
+                # Create DataFrame for display
+                display_df = pd.DataFrame(display_data)
+
+                # Show table with selection using on_select event
+                event = st.dataframe(
+                    display_df,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=min(400, (len(display_df) + 1) * 35 + 3),
+                    on_select="rerun",
+                    selection_mode="single-row",
+                    key="customer_table",
+                )
+
+                # Get selected index from event
+                if event.selection and len(event.selection.rows) > 0:
+                    selected_idx = event.selection.rows[0]
+
+                    # Get selected customer data
+                    selected_row = filtered_df.iloc[selected_idx]
+                    customer_id = int(selected_row["codice_cliente"])
+
+                    # Only update if different customer selected
+                    if st.session_state.get("selected_customer_id") != customer_id:
+                        st.session_state["selected_nba_index"] = selected_idx
+                        st.session_state["selected_nba_data"] = selected_row.to_dict()
+                        st.session_state["selected_customer_id"] = customer_id
+
+                        # Generate and store contact info
+                        random.seed(customer_id)
+                        is_email = random.choice([True, False])
+
+                        if is_email:
+                            st.session_state["contact_info"] = generate_fake_email(
+                                selected_row["full_name"], customer_id
+                            )
+                            st.session_state["contact_channel"] = "Email"
+                        else:
+                            st.session_state["contact_info"] = generate_fake_phone(customer_id)
+                            st.session_state["contact_channel"] = "Telefono"
+                else:
+                    # Clear selection if nothing is selected
+                    if "selected_nba_data" in st.session_state:
+                        del st.session_state["selected_nba_data"]
+                    if "selected_nba_index" in st.session_state:
+                        del st.session_state["selected_nba_index"]
+                    if "selected_customer_id" in st.session_state:
+                        del st.session_state["selected_customer_id"]
 
         except Exception as e:
-            st.error(f"Errore caricamento clienti: {str(e)}")
-            selected_customer_id = None
+            st.error(f"Errore caricamento raccomandazioni NBA: {str(e)}")
+            st.exception(e)
+            return
 
-        st.divider()
-
-        # Product selector
-        st.subheader("📦 Prodotto")
-        selected_product = st.selectbox(
-            "Seleziona prodotto da proporre",
-            options=PRODUCTS,
-            key="product_selector",
-        )
-
-        # Show product info
-        if selected_product:
-            info = PRODUCT_INFO.get(selected_product, {})
-            st.caption(f"**Tipo:** {info.get('type', 'N/A')}")
-            st.caption(f"**Area:** {info.get('area', 'N/A')}")
-            st.caption(info.get("description", ""))
-
-        st.divider()
-
-        # Generate button
-        generate_clicked = st.button(
-            "🚀 Genera Pitch",
-            type="primary",
-            use_container_width=True,
-            disabled=selected_customer_id is None,
-        )
+        except Exception as e:
+            st.error(f"Errore caricamento raccomandazioni NBA: {str(e)}")
+            st.exception(e)
+            return
 
     # Main content area
-    if selected_customer_id:
-        # Load customer profile
+    if "selected_nba_data" in st.session_state:
+        nba_data = st.session_state["selected_nba_data"]
+        selected_customer_id = nba_data["codice_cliente"]
+        selected_product = nba_data["raccomandazione_nba"]
+
+        # Load customer full profile
         try:
             with st.spinner("Caricamento profilo cliente..."):
                 customer_profile = get_customer_full_profile(selected_customer_id)
@@ -359,43 +558,117 @@ def main():
             customer_profile = None
 
         if customer_profile:
-            # Two-column layout
-            col_left, col_right = st.columns([1, 1])
+            # Dynamic column layout based on pitch panel visibility
+            if st.session_state["show_pitch_panel"]:
+                col_left, col_right = st.columns([3, 2])
+            else:
+                # Single column when pitch is hidden
+                col_left = st.container()
+                col_right = None
 
             with col_left:
+                # NBA Context card
+                st.markdown("### 🎯 Contesto NBA")
+
+                # Create structured NBA info table
+                urgency_emoji = {
+                    "CRITICAL": "🔴",
+                    "HIGH": "🟠",
+                    "MEDIUM": "🟡",
+                    "LOW": "🟢",
+                }.get(nba_data["livello_urgenza"], "⚪")
+
+                # Build portfolio display
+                portfolio_items = []
+                if nba_data["possiede_casa"]:
+                    portfolio_items.append("🏠 Casa")
+                if nba_data["possiede_salute"]:
+                    portfolio_items.append("🏥 Salute")
+                if nba_data["possiede_investimento"]:
+                    portfolio_items.append("💰 Investimento")
+                if nba_data["possiede_pip"]:
+                    portfolio_items.append("🎯 PIP")
+                portfolio_str = ", ".join(portfolio_items) if portfolio_items else "Nessuno"
+
+                # Contact channel info from session state
+                contact_info = st.session_state.get("contact_info", "N/A")
+
+                nba_info = pd.DataFrame(
+                    [
+                        {
+                            "Campo": "Prodotto Raccomandato",
+                            "Valore": f"🎯 {nba_data['raccomandazione_nba']}",
+                        },
+                        {
+                            "Campo": "Livello Urgenza",
+                            "Valore": f"{urgency_emoji} {nba_data['livello_urgenza']}",
+                        },
+                        {"Campo": "Canale Contatto", "Valore": contact_info},
+                        {"Campo": "Strategia Pitch", "Valore": nba_data["strategia_pitch"]},
+                        {"Campo": "Segmento Strategico", "Valore": nba_data["segmento_strategico"]},
+                        {
+                            "Campo": "Conv. Rate Previsto",
+                            "Valore": f"{nba_data['tasso_conversione_nba']:.1%}",
+                        },
+                        {"Campo": "CLV Stimato", "Valore": f"€{nba_data['clv_stimato']:,.0f}"},
+                        {"Campo": "Gap Prodotti", "Valore": f"{nba_data['gap_prodotti']} / 4"},
+                        {"Campo": "Portfolio Attuale", "Valore": portfolio_str},
+                    ]
+                )
+
+                st.dataframe(
+                    nba_info,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Campo": st.column_config.TextColumn("Informazione", width="medium"),
+                        "Valore": st.column_config.TextColumn("Dettaglio", width="large"),
+                    },
+                )
+
+                st.divider()
+
+                # Customer profile card
                 render_customer_card(customer_profile)
 
-            with col_right:
-                if generate_clicked:
-                    with st.spinner(
-                        "🤖 Generazione pitch in corso... (può richiedere fino a 30 secondi)"
-                    ):
-                        try:
-                            pitch = generate_sales_pitch(customer_profile, selected_product)
-                            st.session_state["last_pitch"] = pitch
-                            st.session_state["last_pitch_product"] = selected_product
-                            st.session_state["last_pitch_customer"] = selected_customer_id
-                        except Exception as e:
-                            st.error(f"Errore generazione pitch: {str(e)}")
-                            st.exception(e)
-
-                # Show last generated pitch if available
-                if "last_pitch" in st.session_state:
-                    if (
-                        st.session_state.get("last_pitch_customer") == selected_customer_id
-                        and st.session_state.get("last_pitch_product") == selected_product
-                    ):
-                        render_pitch(st.session_state["last_pitch"])
-                    else:
-                        st.info(
-                            "👆 Clicca 'Genera Pitch' per creare un nuovo pitch per questo cliente e prodotto."
-                        )
-                else:
-                    st.info(
-                        "👆 Seleziona un cliente e un prodotto, poi clicca 'Genera Pitch' per iniziare."
+            # Show pitch panel only if toggled on
+            if col_right is not None:
+                with col_right:
+                    # Generate pitch button
+                    generate_clicked = st.button(
+                        f"🚀 Genera Pitch per '{selected_product}'",
+                        type="primary",
+                        use_container_width=True,
                     )
+
+                    if generate_clicked:
+                        with st.spinner(
+                            "🤖 Generazione pitch in corso... (può richiedere fino a 30 secondi)"
+                        ):
+                            try:
+                                pitch = generate_sales_pitch(customer_profile, selected_product)
+                                st.session_state["last_pitch"] = pitch
+                                st.session_state["last_pitch_product"] = selected_product
+                                st.session_state["last_pitch_customer"] = selected_customer_id
+                            except Exception as e:
+                                st.error(f"Errore generazione pitch: {str(e)}")
+                                st.exception(e)
+
+                    # Show last generated pitch if available
+                    if "last_pitch" in st.session_state:
+                        if (
+                            st.session_state.get("last_pitch_customer") == selected_customer_id
+                            and st.session_state.get("last_pitch_product") == selected_product
+                        ):
+                            render_pitch(st.session_state["last_pitch"])
+                        else:
+                            st.info(
+                                "👆 Clicca 'Genera Pitch' per creare un pitch personalizzato per questo cliente."
+                            )
+                    else:
+                        st.info("👆 Clicca 'Genera Pitch' per iniziare la generazione del pitch.")
     else:
-        st.info("👈 Seleziona un cliente dalla barra laterale per iniziare.")
+        st.info("👈 Seleziona un cliente dalla lista NBA nella barra laterale per iniziare.")
 
 
 if __name__ == "__main__":
