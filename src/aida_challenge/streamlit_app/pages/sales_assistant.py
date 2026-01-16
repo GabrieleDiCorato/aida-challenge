@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from aida_challenge.streamlit_app.utils import (
     get_customer_full_profile,
     get_nba_recommendations,
+    load_cached_pitches,
 )
 from aida_challenge.agents import generate_sales_pitch, SalesPitch
 
@@ -35,7 +36,7 @@ st.markdown(
     """
 <style>
     .pitch-section {
-        background-color: #f8f9fa;
+        background-color: ##1f77b4;
         border-radius: 10px;
         padding: 1.5rem;
         margin-bottom: 1rem;
@@ -310,6 +311,23 @@ def render_pitch(pitch: SalesPitch) -> None:
         st.text(pitch.raw_response)
 
 
+def render_cached_pitch(pitch_text: str) -> None:
+    """Render a cached pitch from the proposal CSV."""
+    st.markdown("### 🎯 Pitch Personalizzato (Cached)")
+
+    st.info("✨ Questo pitch è stato pre-generato e ottimizzato per questo cliente.")
+
+    st.markdown(
+        f"""
+    <div class="pitch-section">
+        <div class="pitch-header">💬 Proposta di Contatto</div>
+        {pitch_text}
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
 def generate_fake_email(full_name: str, customer_id: int) -> str:
     """Generate a fake email address based on customer name."""
     # Clean and format name
@@ -385,6 +403,17 @@ def main():
         st.session_state["selected_nba_index"] = None
     if "show_pitch_panel" not in st.session_state:
         st.session_state["show_pitch_panel"] = False
+
+    # Load cached pitches
+    try:
+        cached_pitches_df = load_cached_pitches()
+        # Convert to dict for easy lookup: {customer_id: pitch_text}
+        cached_pitches = dict(
+            zip(cached_pitches_df["codice_cliente"], cached_pitches_df["testo_pitch"])
+        )
+    except Exception as e:
+        st.warning(f"⚠️ Impossibile caricare pitch cached: {str(e)}")
+        cached_pitches = {}
 
     # Logo and Title
     logo_path = Path(__file__).parent.parent / "images" / "vita_sicura_small_transparent.png"
@@ -644,39 +673,80 @@ def main():
             # Show pitch panel only if toggled on
             if col_right is not None:
                 with col_right:
-                    # Generate pitch button
-                    generate_clicked = st.button(
-                        f"🚀 Genera Pitch per '{selected_product}'",
-                        type="primary",
-                        use_container_width=True,
-                    )
+                    # Check if we have a cached pitch for this customer
+                    cached_pitch = cached_pitches.get(selected_customer_id)
 
-                    if generate_clicked:
-                        with st.spinner(
-                            "🤖 Generazione pitch in corso... (può richiedere fino a 30 secondi)"
-                        ):
-                            try:
-                                pitch = generate_sales_pitch(customer_profile, selected_product)
-                                st.session_state["last_pitch"] = pitch
-                                st.session_state["last_pitch_product"] = selected_product
-                                st.session_state["last_pitch_customer"] = selected_customer_id
-                            except Exception as e:
-                                st.error(f"Errore generazione pitch: {str(e)}")
-                                st.exception(e)
+                    if cached_pitch:
+                        # Display cached pitch
+                        st.success("✅ Pitch pre-generato disponibile!")
+                        render_cached_pitch(cached_pitch)
 
-                    # Show last generated pitch if available
-                    if "last_pitch" in st.session_state:
-                        if (
-                            st.session_state.get("last_pitch_customer") == selected_customer_id
-                            and st.session_state.get("last_pitch_product") == selected_product
+                        # Optional: Allow generating a new AI pitch
+                        st.divider()
+                        if st.button(
+                            "🤖 Genera Nuovo Pitch AI",
+                            type="secondary",
+                            use_container_width=True,
+                            help="Genera un pitch dettagliato usando l'AI agent",
                         ):
-                            render_pitch(st.session_state["last_pitch"])
+                            with st.spinner(
+                                "🤖 Generazione pitch in corso... (può richiedere fino a 30 secondi)"
+                            ):
+                                try:
+                                    pitch = generate_sales_pitch(customer_profile, selected_product)
+                                    st.session_state["last_pitch"] = pitch
+                                    st.session_state["last_pitch_product"] = selected_product
+                                    st.session_state["last_pitch_customer"] = selected_customer_id
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Errore generazione pitch: {str(e)}")
+                                    st.exception(e)
+
+                        # Show AI-generated pitch if available
+                        if "last_pitch" in st.session_state:
+                            if (
+                                st.session_state.get("last_pitch_customer") == selected_customer_id
+                                and st.session_state.get("last_pitch_product") == selected_product
+                            ):
+                                st.divider()
+                                st.markdown("### 🤖 Pitch AI Dettagliato")
+                                render_pitch(st.session_state["last_pitch"])
+                    else:
+                        # No cached pitch - show generate button
+                        generate_clicked = st.button(
+                            f"🚀 Genera Pitch per '{selected_product}'",
+                            type="primary",
+                            use_container_width=True,
+                        )
+
+                        if generate_clicked:
+                            with st.spinner(
+                                "🤖 Generazione pitch in corso... (può richiedere fino a 30 secondi)"
+                            ):
+                                try:
+                                    pitch = generate_sales_pitch(customer_profile, selected_product)
+                                    st.session_state["last_pitch"] = pitch
+                                    st.session_state["last_pitch_product"] = selected_product
+                                    st.session_state["last_pitch_customer"] = selected_customer_id
+                                except Exception as e:
+                                    st.error(f"Errore generazione pitch: {str(e)}")
+                                    st.exception(e)
+
+                        # Show last generated pitch if available
+                        if "last_pitch" in st.session_state:
+                            if (
+                                st.session_state.get("last_pitch_customer") == selected_customer_id
+                                and st.session_state.get("last_pitch_product") == selected_product
+                            ):
+                                render_pitch(st.session_state["last_pitch"])
+                            else:
+                                st.info(
+                                    "👆 Clicca 'Genera Pitch' per creare un pitch personalizzato per questo cliente."
+                                )
                         else:
                             st.info(
-                                "👆 Clicca 'Genera Pitch' per creare un pitch personalizzato per questo cliente."
+                                "👆 Clicca 'Genera Pitch' per iniziare la generazione del pitch."
                             )
-                    else:
-                        st.info("👆 Clicca 'Genera Pitch' per iniziare la generazione del pitch.")
     else:
         st.info("👈 Seleziona un cliente dalla lista NBA nella barra laterale per iniziare.")
 

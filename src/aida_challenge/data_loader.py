@@ -26,6 +26,7 @@ def load_raw_data():
         "interazioni_clienti": "data/raw/interazioni_clienti.csv",
         "competitor_prodotti": "data/raw/competitor_prodotti.csv",
         "client_nba_enhanced": "data/analytics/client_nba_enhanced.csv",
+        "client_nba_pitch": "data/analytics/client_nba_pitch.csv",
     }
 
     print("\nLoading CSV files into DuckDB...")

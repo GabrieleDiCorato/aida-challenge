@@ -12,6 +12,10 @@ customers as (
     select * from {{ ref('dim_customers') }}
 ),
 
+nba_pitch as (
+    select * from {{ ref('stg_client_nba_pitch') }}
+),
+
 final as (
     select
         -- Customer identifiers
@@ -59,6 +63,9 @@ final as (
         nba.possiede_pip,
 
         -- Pitch priority score (calculated)
+        pitch.testo_pitch,
+
+        -- Recommendation readiness
         case
             when nba.livello_urgenza = 'CRITICAL' then 4
             when nba.livello_urgenza = 'HIGH' then 3
@@ -67,7 +74,7 @@ final as (
             else 0
         end as punteggio_urgenza,
 
-        -- Recommendation readiness
+        -- Gap analysis
         case
             when
                 nba.livello_urgenza in ('CRITICAL', 'HIGH')
@@ -85,7 +92,7 @@ final as (
             else 'Monitor'
         end as strategia_pitch,
 
-        -- Gap analysis
+        -- Pitch suggestion cached
         (4 - (nba.possiede_casa + nba.possiede_salute + nba.possiede_investimento + nba.possiede_pip)) as gap_prodotti,
 
         -- Metadata
@@ -93,7 +100,8 @@ final as (
 
     from customers as c
     inner join nba_data as nba on c.codice_cliente = nba.codice_cliente
+    inner join nba_pitch as pitch on c.codice_cliente = pitch.codice_cliente
 )
 
 select * from final
-order by punteggio_urgenza desc, clv_estimato desc
+order by punteggio_urgenza desc, clv_stimato desc

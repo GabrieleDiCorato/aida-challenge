@@ -24,6 +24,19 @@ sources:
           - name: conversion_rate
             description: "Expected conversion rate for NBA recommendation"
 
+      - name: client_nba_pitch
+        description: "Cached personalized sales pitch proposals for customers with NBA recommendations"
+        columns:
+          - name: codice_cliente
+            description: "Unique customer identifier"
+            tests:
+              - unique
+              - not_null
+          - name: raccomandazione_nba
+            description: "Next Best Action recommendation (product bundle)"
+          - name: pitch_suggestion
+            description: "Pre-generated personalized sales pitch text"
+
   - name: raw
     description: "Raw CSV data loaded into DuckDB"
     schema: main

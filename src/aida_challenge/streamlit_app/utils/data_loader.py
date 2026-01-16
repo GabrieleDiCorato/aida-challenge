@@ -189,6 +189,22 @@ def load_interaction_summary():
     ).df()
 
 
+@st.cache_data(ttl=3600)
+def load_cached_pitches():
+    """Load cached sales pitch proposals."""
+    con = get_db_connection()
+    return con.execute(
+        """
+        SELECT
+            codice_cliente,
+            raccomandazione_nba,
+            testo_pitch
+        FROM main_marts.mart_nba_recommendations
+        WHERE testo_pitch IS NOT NULL
+    """
+    ).df()
+
+
 # Raw staging table loaders - 1:1 with source tables
 @st.cache_data(ttl=3600)
 def load_raw_clienti():
