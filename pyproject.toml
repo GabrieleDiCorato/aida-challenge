@@ -12,6 +12,7 @@ dependencies = [
     "openai>=2.15.0",
     "google-adk>=1.22.1",
     "litellm>=1.80.16",
+    "scikit-learn>=1.8.0",
 ]
 
 [project.optional-dependencies]
