@@ -13,6 +13,9 @@ sources:
             tests:
               - unique
               - not_null
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
           - name: strategic_segment
             description: "Strategic customer segment"
           - name: nba_recommendation
@@ -32,6 +35,9 @@ sources:
             tests:
               - unique
               - not_null
+              - relationships:
+                  to: source('raw', 'clienti')
+                  field: codice_cliente
           - name: raccomandazione_nba
             description: "Next Best Action recommendation (product bundle)"
           - name: pitch_suggestion

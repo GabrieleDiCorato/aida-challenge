@@ -750,6 +750,10 @@ def main():
     else:
         st.info("👈 Seleziona un cliente dalla lista NBA nella barra laterale per iniziare.")
 
+    # Footer
+    st.markdown("---")
+    st.markdown("**AIDA Challenge Dashboard** | Data sourced from DuckDB | Built with Streamlit")
+
 
 if __name__ == "__main__":
     main()
