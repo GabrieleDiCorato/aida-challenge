@@ -5,5 +5,5 @@ dialect = duckdb
 exclude_rules = RF06
 
 [sqlfluff:templater:dbt]
-project_dir = dbt_project/
-profiles_dir = dbt_project/
+project_dir = src/aida_challenge/dbt_project
+profiles_dir = src/aida_challenge/dbt_project

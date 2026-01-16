@@ -96,4 +96,4 @@ final as (
 )
 
 select * from final
-order by punteggio_urgenza desc, clv_stimato desc
+order by punteggio_urgenza desc, clv_estimato desc

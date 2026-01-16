@@ -24,7 +24,7 @@ The goal is to explore data, identify insights, and build reproducible pipelines
 
 ```bash
 # 1. Copy and configure dbt profiles
-cp dbt_project/profiles.yml.example dbt_project/profiles.yml
+cp src/aida_challenge/dbt_project/profiles.yml.example src/aida_challenge/dbt_project/profiles.yml
 
 # 2. Install dependencies
 uv sync --all-extras
@@ -41,7 +41,7 @@ For a more production-ready setup, you can use the standard dbt profiles locatio
 ```bash
 # Copy profiles to ~/.dbt/ directory
 mkdir -p ~/.dbt
-cp dbt_project/profiles.yml.example ~/.dbt/profiles.yml
+cp src/aida_challenge/dbt_project/profiles.yml.example ~/.dbt/profiles.yml
 # Edit ~/.dbt/profiles.yml and adjust paths as needed
 
 # The dbt commands will automatically use ~/.dbt/profiles.yml
@@ -218,13 +218,13 @@ The Sales Assistant provides:
 ## Development Workflow
 
 1. **Explore data** in Jupyter notebooks (`notebooks/exploratory/`) or DuckDB UI (`uv run explore-db`)
-2. **Transform data** with dbt models (`dbt_project/models/`)
+2. **Transform data** with dbt models (`src/aida_challenge/dbt_project/models/`)
 3. **Test transformations** (`uv run dbt-test`)
 4. **Document insights** and iterate
 
 ## Documentation
 
-- **[dbt_project/README.md](dbt_project/README.md)** - dbt models documentation
+- **[src/aida_challenge/dbt_project/README.md](src/aida_challenge/dbt_project/README.md)** - dbt models documentation
 - **[docs/data_schema.md](docs/data_schema.md)** - Raw data schema reference
 
 Generate and browse interactive dbt documentation:

@@ -10,7 +10,7 @@ from datetime import datetime
 def _set_project_root():
     """Change to dbt project directory."""
     root = Path(__file__).parent.parent.parent
-    dbt_dir = root / "dbt_project"
+    dbt_dir = root / "src" / "aida_challenge" / "dbt_project"
     os.chdir(dbt_dir)
     return dbt_dir
 
@@ -41,7 +41,7 @@ def _check_database():
 def _archive_log():
     """Archive dbt.log to timestamped filename after command execution."""
     root = Path(__file__).parent.parent.parent
-    log_dir = root / "dbt_project" / "logs"
+    log_dir = root / "src" / "aida_challenge" / "dbt_project" / "logs"
     default_log = log_dir / "dbt.log"
 
     if default_log.exists():

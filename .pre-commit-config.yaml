@@ -24,8 +24,10 @@ repos:
     hooks:
       - id: sqlfluff-fix
         additional_dependencies: ['dbt-duckdb', 'sqlfluff-templater-dbt']
+        files: ^src/aida_challenge/dbt_project/models/.*\.sql$
       - id: sqlfluff-lint
         additional_dependencies: ['dbt-duckdb', 'sqlfluff-templater-dbt']
+        files: ^src/aida_challenge/dbt_project/models/.*\.sql$
 
   - repo: https://github.com/srstevenson/nb-clean
     rev: 3.2.0

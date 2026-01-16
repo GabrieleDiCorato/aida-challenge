@@ -1,6 +1,29 @@
 version: 2
 
 sources:
+  - name: analytics
+    description: "Analytical tables and enriched datasets"
+    schema: main
+    tables:
+      - name: client_nba_enhanced
+        description: "Enhanced customer data with Next Best Action recommendations and strategic segmentation"
+        columns:
+          - name: codice_cliente
+            description: "Unique customer identifier"
+            tests:
+              - unique
+              - not_null
+          - name: strategic_segment
+            description: "Strategic customer segment"
+          - name: nba_recommendation
+            description: "Next Best Action recommendation"
+          - name: urgency_tier
+            description: "Urgency level for the recommendation"
+          - name: cluster
+            description: "Customer cluster assignment"
+          - name: conversion_rate
+            description: "Expected conversion rate for NBA recommendation"
+
   - name: raw
     description: "Raw CSV data loaded into DuckDB"
     schema: main

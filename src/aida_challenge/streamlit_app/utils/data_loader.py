@@ -12,8 +12,9 @@ import streamlit as st
 @st.cache_resource
 def get_db_connection():
     """Create and cache database connection."""
-    # Database is at project root/data, streamlit_app is 3 levels deep
-    db_path = Path(__file__).parent.parent.parent.parent / "data" / "aida_challenge.duckdb"
+    # Database is at project root/data, data_loader.py is 5 levels deep from root
+    # src/aida_challenge/streamlit_app/utils/data_loader.py -> aida-challenge/
+    db_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "aida_challenge.duckdb"
     return duckdb.connect(str(db_path), read_only=True)
 
 

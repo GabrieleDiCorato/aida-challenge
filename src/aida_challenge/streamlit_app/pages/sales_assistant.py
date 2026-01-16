@@ -16,7 +16,7 @@ import sys
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from aida_challenge.streamlit_app.data_loader import (
+from aida_challenge.streamlit_app.utils import (
     get_customer_full_profile,
     get_nba_recommendations,
 )
@@ -386,11 +386,21 @@ def main():
     if "show_pitch_panel" not in st.session_state:
         st.session_state["show_pitch_panel"] = False
 
+    # Logo and Title
+    logo_path = Path(__file__).parent.parent / "images" / "vita_sicura_small_transparent.png"
+    if not logo_path.exists():
+        st.warning("Logo image not found. Please ensure the image exists at the specified path.")
+
     # Header with title and toggle button
     col_title, col_button = st.columns([3, 1])
     with col_title:
-        st.title("🤖 Sales Assistant")
-        st.markdown("*Clienti prioritari con raccomandazioni Next Best Action*")
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.image(str(logo_path), width=150)
+        with col2:
+            st.title("Sales Assistant")
+            st.markdown("*Clienti prioritari con raccomandazioni Next Best Action*")
+
     with col_button:
         st.write("")  # Spacer
         if st.button(
