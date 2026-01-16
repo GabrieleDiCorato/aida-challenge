@@ -8,6 +8,8 @@ This project contains analytics pipelines for an insurance dataset, leveraging:
 
 - **DuckDB** for efficient analytical queries
 - **dbt** for data transformation and modeling
+- **Streamlit** to create a P.o.C. interactive dashboard
+- **Google Agent Development Kit** to orchestrate Ai agents
 - **UV** for fast Python dependency management
 - **Jupyter** for exploratory data analysis
 
@@ -89,6 +91,9 @@ uv run dbt-build
 # Generate and view documentation
 uv run dbt-docs-generate
 uv run dbt-docs-serve
+
+# Invoke the DuckDB UI to explore data in your browser
+uv run explore-db
 ```
 
 ### Exploratory Analysis
@@ -168,25 +173,25 @@ uv run streamlit-app
 
 Then navigate to the **Sales Chatbot** page from the sidebar.
 
-#### Features
+# Features
 
-##### Next Best Action Engine
+## Next Best Action Engine
 - **Priority-Ordered Customer List**: Customers ranked by urgency (CRITICAL, HIGH, MEDIUM, LOW) and CLV
 - **Smart Recommendations**: Product recommendations based on customer segmentation, gaps in portfolio, and conversion probability
 - **Strategic Insights**: Shows pitch strategy (Ready to Pitch, Retention First, Nurture & Pitch, Monitor)
 - **Portfolio Analysis**: Visual display of current product ownership and gap analysis
 - **Conversion Rate Forecasts**: NBA-specific conversion rates for recommended products
 
-##### AI-Powered Pitch Generation
+## AI-Powered Pitch Generation
 - **Customer 360° View**: Complete customer profile with demographics, policies, interactions, claims
 - **Multi-Agent System**: Uses Google ADK with OpenRouter's **DeepSeek R1** (free) for intelligent pitch generation
 - **RAG-Powered**: Retrieves relevant contract sections using vector similarity search (DuckDB VSS)
 - **Structured Output**: Generates pitches with customer summary, selling points, objection handling, and next steps
 - **Personalized Context**: Incorporates NBA insights and customer history into pitch generation
 
-#### How It Works
+## How It Works
 
-##### NBA Recommendation Flow
+### NBA Recommendation Flow
 1. The system loads pre-computed recommendations from `mart_nba_recommendations`
 2. Customers are displayed in priority order based on:
    - **Urgency Level**: CRITICAL > HIGH > MEDIUM > LOW
@@ -197,17 +202,13 @@ Then navigate to the **Sales Chatbot** page from the sidebar.
    - Expected conversion rate
    - Current product portfolio gaps
 
-##### AI Pitch Generation
+### AI Pitch Generation
 The system uses a sequential multi-agent workflow:
 1. **Customer Analyst Agent** - Analyzes the customer profile to identify needs and opportunities
 2. **RAG Agent** - Retrieves relevant product contract sections from embedded documents
 3. **Pitch Generator Agent** - Creates a personalized sales pitch in Italian, incorporating NBA context
 
-All agents use **DeepSeek R1** via OpenRouter (completely free, no rate limits on free tier).
-
-Embeddings use **text-embedding-3-small** via OpenRouter.
-
-#### Filters and Controls
+### Filters and Controls
 
 The Sales Assistant provides:
 - **Urgency Filter**: Focus on specific urgency levels
@@ -244,6 +245,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 This repository contains exploratory code developed for educational purposes and as a proof of concept for data analytics workflows. It is **not production-ready** and should not be used in production environments without significant review, testing, and hardening.
 
 Key limitations:
+- Static dataset: we were provided a static, synthetic dataset. No effort was made to prepare for ingesting new data or handling real-time updates.
 - Code may not follow all production best practices
 - Limited error handling and edge case coverage
 - Data quality checks are illustrative, not comprehensive
