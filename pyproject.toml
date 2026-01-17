@@ -70,6 +70,7 @@ dbt-build = "aida_challenge.dbt_commands:dbt_build"
 dbt-clean = "aida_challenge.dbt_commands:dbt_clean"
 dbt-docs-generate = "aida_challenge.dbt_commands:dbt_docs_generate"
 dbt-docs-serve = "aida_challenge.dbt_commands:dbt_docs_serve"
+analytics-pipeline = "aida_challenge.analytics.run_analytics_pipeline:main"
 
 [tool.uv]
 dev-dependencies = [

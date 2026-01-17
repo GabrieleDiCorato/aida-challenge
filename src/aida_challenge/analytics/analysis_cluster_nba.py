@@ -1,321 +1,520 @@
 """
-analysis_cluster_nba.py
------------------------
+Cluster-aware NBA enhancement pipeline.
 
-This script enhances the existing client‑level NBA outputs by
-incorporating unsupervised cluster insights and interaction preferences.
-Starting from the previously generated ``client_nba_enhanced.csv`` and
-``hv_cluster_summary.csv``, it performs the following steps:
+This script enhances NBA recommendations by incorporating cluster insights
+and interaction preferences. It performs:
 
-1. **Cluster assignment for one‑product Upper‑Retail clients**
-   Clients in the ``Upper‑Retail`` value segment who own exactly one
-   product are not present in the original K‑Means clustering (which
-   only covers high‑value multi‑product customers).  To bring them
-   into the same segmentation framework, we assign them to the cluster
-   whose members most frequently own the same product.  If multiple
-   clusters share the same ownership level, the script picks the
-   cluster with the highest average ``Total_Wealth`` (proxy for
-   similarity).  The cluster summaries used to compute these
-   statistics are derived from the high‑value clusters.
+1. Cluster assignment for single-product Upper-Retail clients
+2. Cluster-aware NBA recommendations
+3. Urgency tier adjustment based on customer responsiveness
+4. Best contact channel determination
 
-2. **Cluster‑aware NBA recommendations**
-   Once a one‑product client has been assigned to a cluster, the script
-   determines the cluster’s most common product mix (a ranked list of
-   product categories).  The new next‑best action (NBA) recommends the
-   first missing product in that cluster’s ranked list.  For clients
-   already clustered (multi‑product high‑value clients) the same logic
-   applies.  Non Upper‑Retail clients retain their original
-   rule‑based NBA recommendation.
-
-3. **Urgency tier adjusted by responsiveness**
-   The script merges the ``Cluster_Risposta`` (high/moderate/low
-   responder classification) from ``clienti.csv``.  If a client is
-   labelled ``High_Responder`` and has a non‑retention NBA, the
-   urgency tier is bumped up one level (e.g. ``MEDIUM`` → ``HIGH``).
-   This reflects the intuition that high responders should be
-   prioritised even if their last visit was not recent.
-
-4. **Best contact channel**
-   Using ``interazioni_clienti.csv``, the script computes the
-   conversion rate for each client/channel pair.  The best channel is
-   chosen as the one with the highest conversion rate; if no channel
-   shows any conversions, the most frequently used channel is picked.
-   A default of ``N/A`` is assigned when a client has no recorded
-   interactions.
-
-The final enriched dataset is written to ``client_enhanced_nba.csv``
-in the ``output`` folder.  A small CSV summarising the product
-ownership distribution by cluster (used to drive the cluster‑aware
-recommendations) is also saved as ``cluster_product_mix.csv``.
+Reads from dbt models and analytics schema, writes enhanced NBA data
+back to analytics schema for consumption by dbt marts.
 """
 
-import os
+import datetime
+from pathlib import Path
+from typing import Dict
 import pandas as pd
-import numpy as np
+import duckdb
 
-DATA_DIR = os.path.dirname(__file__)
-OUTPUT_DIR = os.path.join(DATA_DIR, "output")
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "aida_challenge.duckdb"
+MODEL_VERSION = datetime.datetime.now().strftime("v%Y%m")
+
+# -----------------------------------------------------------------------------
+# Utility functions
+# -----------------------------------------------------------------------------
 
 
-def load_inputs() -> dict:
-    """Load the prerequisite CSV files into DataFrames."""
-    paths = {
-        "client_enhanced": os.path.join(DATA_DIR, "client_nba_enhanced.csv"),
-        "hv_summary": os.path.join(DATA_DIR, "hv_cluster_summary.csv"),
-        "clienti": os.path.join(DATA_DIR, "clienti.csv"),
-        "interazioni": os.path.join(DATA_DIR, "interazioni_clienti.csv"),
-    }
+def validate_dataframe(df: pd.DataFrame, name: str, min_rows: int = 1) -> None:
+    """Validate DataFrame meets basic requirements."""
+    if df is None or df.empty:
+        raise ValueError(f"{name} is empty")
+
+    if len(df) < min_rows:
+        raise ValueError(f"{name} has only {len(df)} rows, expected at least {min_rows}")
+
+
+def load_inputs(con: duckdb.DuckDBPyConnection) -> Dict[str, pd.DataFrame]:
+    """Load all required data from database."""
     data = {}
-    for key, path in paths.items():
-        data[key] = pd.read_csv(path)
+
+    # Customer strategic segmentation
+    data["customers"] = con.execute(
+        """
+        SELECT
+            codice_cliente,
+            segmento_valore,
+            fase_vita,
+            num_prodotti_posseduti,
+            possiede_casa,
+            possiede_salute,
+            possiede_investimento,
+            possiede_pip,
+            patrimonio_totale,
+            raccomandazione_nba,
+            livello_urgenza
+        FROM main_intermediate.int_customer_strategic_segment
+    """
+    ).df()
+    validate_dataframe(data["customers"], "Customer data")
+
+    # Cluster assignments
+    data["clusters"] = con.execute(
+        """
+        SELECT
+            codice_cliente,
+            cluster as cluster_id,
+            versione_modello
+        FROM analytics.customer_clusters
+        WHERE versione_modello = ?
+    """,
+        [MODEL_VERSION],
+    ).df()
+
+    # If no clusters for this version, try latest
+    if data["clusters"].empty:
+        latest_version_result = con.execute(
+            """
+            SELECT versione_modello
+            FROM analytics.customer_clusters
+            ORDER BY versione_modello DESC
+            LIMIT 1
+        """
+        ).fetchone()
+
+        if latest_version_result:
+            data["clusters"] = con.execute(
+                """
+                SELECT
+                    codice_cliente,
+                    cluster as cluster_id,
+                    versione_modello
+                FROM analytics.customer_clusters
+                WHERE versione_modello = ?
+            """,
+                [latest_version_result[0]],
+            ).df()
+
+    # Cluster summary
+    if not data["clusters"].empty:
+        version = data["clusters"]["versione_modello"].iloc[0]
+        data["cluster_summary"] = con.execute(
+            """
+            SELECT
+                cluster,
+                possiede_casa,
+                possiede_salute,
+                possiede_investimento,
+                possiede_pip,
+                patrimonio_totale
+            FROM analytics.cluster_summary
+            WHERE versione_modello = ?
+        """,
+            [version],
+        ).df()
+    else:
+        data["cluster_summary"] = pd.DataFrame()
+
+    # Customer responder classification
+    data["responder"] = con.execute(
+        """
+        SELECT
+            codice_cliente,
+            cluster_risposta
+        FROM clienti
+    """
+    ).df()
+    validate_dataframe(data["responder"], "Responder data")
+
+    # Interactions for channel analysis
+    data["interactions"] = con.execute(
+        """
+        SELECT
+            codice_cliente,
+            tipo_interazione,
+            conversione
+        FROM interazioni_clienti
+    """
+    ).df()
+    validate_dataframe(data["interactions"], "Interactions data")
+
     return data
 
 
-def compute_cluster_product_mix(client_enhanced: pd.DataFrame) -> pd.DataFrame:
+def compute_cluster_product_mix(cluster_summary: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute the proportion of clients in each cluster who own each
-    product.  Returns a DataFrame indexed by cluster with columns
-    'casa_owned', 'salute_owned', 'investimento_owned', 'pip_owned'.
+    Compute product ownership proportions by cluster.
+
+    Returns DataFrame with cluster and mean ownership for each product.
     """
-    hv = client_enhanced[client_enhanced["cluster"] >= 0]
-    if hv.empty:
-        # If no high-value clients are present, return an empty frame
+    if cluster_summary.empty:
         return pd.DataFrame(
-            columns=["cluster", "casa_owned", "salute_owned", "investimento_owned", "pip_owned"]
+            columns=[
+                "cluster",
+                "possiede_casa",
+                "possiede_salute",
+                "possiede_investimento",
+                "possiede_pip",
+            ]
         )
-    # Group by cluster and compute mean of ownership flags
-    product_cols = ["casa_owned", "salute_owned", "investimento_owned", "pip_owned"]
-    cluster_mix = hv.groupby("cluster")[product_cols].mean()
-    cluster_mix = cluster_mix.reset_index()
+
+    product_cols = ["possiede_casa", "possiede_salute", "possiede_investimento", "possiede_pip"]
+
+    cluster_mix = cluster_summary[["cluster"] + product_cols].copy()
     return cluster_mix
 
 
-def assign_one_product_cluster(
-    client_enhanced: pd.DataFrame, cluster_mix: pd.DataFrame, summary: pd.DataFrame
-) -> pd.Series:
+def assign_single_product_clusters(
+    customers: pd.DataFrame,
+    clusters: pd.DataFrame,
+    cluster_mix: pd.DataFrame,
+    cluster_summary: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Assign clusters to Upper-Retail clients with exactly one product.
 
-    Args:
-        client_enhanced: full client DataFrame
-        cluster_mix: DataFrame with cluster product proportions
-        summary: hv_cluster_summary DataFrame containing average
-            Total_Wealth per cluster (fallback for ties)
-
-    Returns:
-        Series of assigned cluster IDs for clients with 1 product;
-        index aligned with client_enhanced.
+    Uses product affinity - assigns to cluster where that product is most common.
+    Ties broken by highest average wealth.
     """
-    # Determine cluster prevalence for each product
-    product_cols = ["casa_owned", "salute_owned", "investimento_owned", "pip_owned"]
-    # Convert cluster mix to dictionary keyed by product
-    mix_dict = {}
-    for col in product_cols:
-        mix_dict[col] = cluster_mix.set_index("cluster")[col].to_dict()
+    # Merge existing clusters
+    customers_with_clusters = customers.merge(
+        clusters[["codice_cliente", "cluster_id"]], on="codice_cliente", how="left"
+    )
 
-    # Fallback ordering by Total_Wealth: choose cluster with highest wealth
-    if "Total_Wealth" in summary.columns:
-        wealth_order = summary.sort_values("Total_Wealth", ascending=False)["cluster"].tolist()
+    if cluster_mix.empty:
+        customers_with_clusters["cluster_id"] = customers_with_clusters["cluster_id"].fillna(-1)
+        return customers_with_clusters
+
+    # Identify clients needing cluster assignment
+    needs_assignment = (
+        (customers_with_clusters["segmento_valore"] == "Upper-Retail")
+        & (customers_with_clusters["num_prodotti_posseduti"] == 1)
+        & (customers_with_clusters["cluster_id"].isna())
+    )
+
+    if not needs_assignment.any():
+        customers_with_clusters["cluster_id"] = customers_with_clusters["cluster_id"].fillna(-1)
+        return customers_with_clusters
+
+    # For each single-product client, find best matching cluster
+    product_cols = ["possiede_casa", "possiede_salute", "possiede_investimento", "possiede_pip"]
+
+    # Wealth ordering for tie-breaking
+    if "patrimonio_totale" in cluster_summary.columns:
+        wealth_order = cluster_summary.sort_values("patrimonio_totale", ascending=False)[
+            "cluster"
+        ].tolist()
     else:
-        wealth_order = summary["cluster"].tolist()
+        wealth_order = cluster_summary["cluster"].tolist()
 
-    assigned = []
-    for idx, row in client_enhanced.iterrows():
-        # Only assign if exactly one product and Upper-Retail
-        if row["value_segment"] != "Upper-Retail" or row["num_products"] != 1:
-            assigned.append(np.nan)
-            continue
-        # Identify which product is owned
+    assigned_clusters = []
+    for idx, row in customers_with_clusters[needs_assignment].iterrows():
+        # Find which product is owned
         owned_product = None
         for col in product_cols:
             if row[col] == 1:
                 owned_product = col
                 break
-        # Determine the cluster with the highest ownership for that product
+
         if owned_product is None:
-            # No product found (should not happen for num_products == 1)
-            assigned.append(wealth_order[0] if wealth_order else -1)
+            # Shouldn't happen for single-product clients
+            assigned_clusters.append(wealth_order[0] if wealth_order else -1)
             continue
-        # Get ownership proportion per cluster for this product
-        proportions = mix_dict.get(owned_product, {})
-        if len(proportions) == 0:
-            assigned.append(wealth_order[0] if wealth_order else -1)
+
+        # Find cluster with highest ownership of this product
+        cluster_scores = cluster_mix.set_index("cluster")[owned_product].to_dict()
+
+        if not cluster_scores:
+            assigned_clusters.append(wealth_order[0] if wealth_order else -1)
             continue
-        # Find cluster(s) with max proportion
-        max_prop = max(proportions.values())
-        candidates = [c for c, p in proportions.items() if p == max_prop]
-        # Tie-break using wealth order
-        chosen_cluster = None
+
+        max_score = max(cluster_scores.values())
+        candidates = [c for c, s in cluster_scores.items() if s == max_score]
+
+        # Tie-break by wealth
+        best_cluster = None
         for c in wealth_order:
             if c in candidates:
-                chosen_cluster = c
+                best_cluster = c
                 break
-        assigned.append(chosen_cluster if chosen_cluster is not None else candidates[0])
-    return pd.Series(assigned, index=client_enhanced.index)
+
+        assigned_clusters.append(best_cluster if best_cluster is not None else candidates[0])
+
+    # Assign clusters
+    customers_with_clusters.loc[needs_assignment, "cluster_id"] = assigned_clusters
+    customers_with_clusters["cluster_id"] = (
+        customers_with_clusters["cluster_id"].fillna(-1).astype(int)
+    )
+
+    return customers_with_clusters
 
 
-def determine_cluster_ranked_products(cluster_mix: pd.DataFrame) -> dict:
+def compute_cluster_product_ranking(cluster_mix: pd.DataFrame) -> Dict[int, list]:
     """
-    For each cluster, produce a ranked list of product categories
-    (strings: 'casa', 'salute', 'investimento', 'pip') ordered by
-    decreasing ownership proportion.  Returns a dict mapping cluster
-    id to list of products.
+    For each cluster, rank products by ownership proportion.
+
+    Returns dict mapping cluster_id to list of products in descending order.
     """
-    product_cols = ["casa_owned", "salute_owned", "investimento_owned", "pip_owned"]
+    if cluster_mix.empty:
+        return {}
+
+    product_cols = ["possiede_casa", "possiede_salute", "possiede_investimento", "possiede_pip"]
+    product_names = ["Casa", "Salute", "Investimento", "PIP"]
+
     ranking = {}
     for _, row in cluster_mix.iterrows():
-        cluster_id = row["cluster"]
-        # Sort product columns by decreasing mean proportion
-        sorted_products = sorted(product_cols, key=lambda col: row[col], reverse=True)
-        # Convert from flag column names to base product names
-        sorted_names = [col.replace("_owned", "") for col in sorted_products]
-        ranking[cluster_id] = sorted_names
+        cluster_id = int(row["cluster"])
+        # Sort products by ownership proportion
+        products_with_scores = [(name, row[col]) for name, col in zip(product_names, product_cols)]
+        products_with_scores.sort(key=lambda x: x[1], reverse=True)
+        ranking[cluster_id] = [p[0] for p in products_with_scores]
+
     return ranking
 
 
-def enhance_nba(data: dict) -> pd.DataFrame:
+def enhance_nba_with_clusters(
+    customers: pd.DataFrame, product_ranking: Dict[int, list]
+) -> pd.DataFrame:
     """
-    Generate an enhanced client DataFrame with cluster-aware NBA,
-    updated urgency tiers and contact channel suggestions.
+    Enhance NBA recommendations using cluster product preferences.
 
-    Args:
-        data: dictionary of DataFrames loaded by load_inputs()
-
-    Returns:
-        DataFrame with new columns: cluster_assigned (for one-product clients),
-        nba_clustered (cluster-aware NBA), adjusted_urgency, best_contact_channel
+    For Upper-Retail clients in a cluster, recommend first missing product
+    in cluster's ranked list.
     """
-    clients = data["client_enhanced"].copy()
-    summary = data["hv_summary"].copy()
-    # Compute cluster product proportions and ranking
-    cluster_mix = compute_cluster_product_mix(clients)
-    ranking = determine_cluster_ranked_products(cluster_mix) if not cluster_mix.empty else {}
+    enhanced = customers.copy()
 
-    # Assign clusters to one-product Upper-Retail clients
-    assigned_clusters = assign_one_product_cluster(clients, cluster_mix, summary)
-    clients["cluster_assigned"] = assigned_clusters
+    def cluster_nba(row):
+        # Only enhance Upper-Retail clients
+        if row["segmento_valore"] != "Upper-Retail":
+            return row["raccomandazione_nba"]
 
-    # Fill missing cluster assignments with existing cluster values
-    # For multi-product or non-Upper-Retail clients, cluster_assigned remains NaN
-    clients.loc[clients["cluster"] >= 0, "cluster_assigned"] = clients.loc[
-        clients["cluster"] >= 0, "cluster"
-    ]
-    # Convert to int where possible
-    clients["cluster_assigned"] = clients["cluster_assigned"].fillna(-1).astype(int)
-
-    # Determine NBA per cluster for all clients
-    def cluster_based_nba(row):
-        # Only override for Upper-Retail clients
-        if row["value_segment"] != "Upper-Retail":
-            return row["nba_recommendation"]
-        cluster_id = row["cluster_assigned"]
+        cluster_id = int(row["cluster_id"])
         if cluster_id < 0:
-            return row["nba_recommendation"]
-        # Determine missing products
-        owned_flags = {
-            "casa": row["casa_owned"],
-            "salute": row["salute_owned"],
-            "investimento": row["investimento_owned"],
-            "pip": row["pip_owned"],
+            return row["raccomandazione_nba"]
+
+        # Get cluster's product ranking
+        ranked_products = product_ranking.get(cluster_id, ["Casa", "Salute", "Investimento", "PIP"])
+
+        # Find missing products
+        owned = {
+            "Casa": row["possiede_casa"],
+            "Salute": row["possiede_salute"],
+            "Investimento": row["possiede_investimento"],
+            "PIP": row["possiede_pip"],
         }
-        missing = [p for p, flag in owned_flags.items() if flag == 0]
-        # Get ranked products for cluster
-        ranked = ranking.get(cluster_id, ["casa", "salute", "investimento", "pip"])
-        # Propose first missing product in ranked order
-        for p in ranked:
-            if p in missing:
-                return p.capitalize() if p != "pip" else "PIP"
-        # If none missing in ranked order, default to original NBA
-        return row["nba_recommendation"]
+        missing = [p for p in ranked_products if owned.get(p, 0) == 0]
 
-    clients["nba_clustered"] = clients.apply(cluster_based_nba, axis=1)
+        if not missing:
+            return "Retention"
 
-    # Merge Cluster_Risposta to compute high responder adjustments
-    clienti = data["clienti"][["codice_cliente", "Cluster_Risposta"]].copy()
-    clienti.rename(columns={"Cluster_Risposta": "responder_class"}, inplace=True)
-    clients = clients.merge(clienti, on="codice_cliente", how="left")
+        # Recommend first missing product in cluster's preference order
+        return missing[0]
 
-    # Map urgency tiers to numeric levels for adjustment
-    urgency_map = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
-    inv_urgency_map = {v: k for k, v in urgency_map.items()}
-    clients["urgency_level"] = clients["urgency_tier"].map(urgency_map)
+    enhanced["raccomandazione_nba_cluster"] = enhanced.apply(cluster_nba, axis=1)
+    return enhanced
 
-    # Adjust urgency: bump up one level for high responders with non-retention NBA
+
+def adjust_urgency_by_responsiveness(
+    customers: pd.DataFrame, responder: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Adjust urgency tier based on customer responsiveness.
+
+    High responders get bumped up one urgency level for non-retention NBA.
+    """
+    enhanced = customers.merge(
+        responder[["codice_cliente", "cluster_risposta"]], on="codice_cliente", how="left"
+    )
+
+    urgency_levels = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+    inv_urgency = {v: k for k, v in urgency_levels.items()}
+
     def adjust_urgency(row):
-        level = row["urgency_level"]
-        if row["responder_class"] == "High_Responder" and row["nba_clustered"] != "Retention":
+        level = urgency_levels.get(row["livello_urgenza"], 0)
+
+        # Bump up high responders with non-retention NBA
+        if (
+            row["cluster_risposta"] == "High_Responder"
+            and row["raccomandazione_nba_cluster"] != "Retention"
+        ):
             level = min(level + 1, 3)
-        return inv_urgency_map.get(level, row["urgency_tier"])
 
-    clients["adjusted_urgency"] = clients.apply(adjust_urgency, axis=1)
+        return inv_urgency.get(level, row["livello_urgenza"])
 
-    # Determine best contact channel using interactions
-    interazioni = data["interazioni"][["codice_cliente", "Tipo_Interazione", "Conversione"]].copy()
-    # Convert Conversione to numeric 1/0 for mean
-    interazioni["Conversione"] = interazioni["Conversione"].map({True: 1, False: 0})
-    # Compute conversion rate per client per channel
-    conv_rate = (
-        interazioni.groupby(["codice_cliente", "Tipo_Interazione"])["Conversione"]
-        .mean()
-        .reset_index(name="conversion_rate")
+    enhanced["livello_urgenza_adjusted"] = enhanced.apply(adjust_urgency, axis=1)
+    return enhanced
+
+
+def determine_best_channel(interactions: pd.DataFrame) -> pd.DataFrame:
+    """
+    Determine best contact channel for each customer.
+
+    Chooses channel with highest conversion rate, or most frequent if no conversions.
+    """
+    # Convert boolean to int
+    interactions_clean = interactions.copy()
+    interactions_clean["conversione"] = interactions_clean["conversione"].map({True: 1, False: 0})
+
+    # Compute conversion rate per customer per channel
+    channel_stats = (
+        interactions_clean.groupby(["codice_cliente", "tipo_interazione"])
+        .agg(conversion_rate=("conversione", "mean"), interaction_count=("conversione", "count"))
+        .reset_index()
     )
-    # Compute interaction count per client per channel
-    count_inter = (
-        interazioni.groupby(["codice_cliente", "Tipo_Interazione"])
-        .size()
-        .reset_index(name="inter_count")
-    )
-    # Merge to compute best channel
-    channel_stats = conv_rate.merge(count_inter, on=["codice_cliente", "Tipo_Interazione"])
 
-    # Determine best channel for each client
-    def pick_channel(group):
-        # group: rows for one client with channels and conversion rates
-        # Choose channel with highest conversion_rate; if tie (or all zero), choose highest inter_count
+    # Find best channel for each customer
+    def pick_best_channel(group):
+        # Highest conversion rate
         max_conv = group["conversion_rate"].max()
         candidates = group[group["conversion_rate"] == max_conv]
+
         if len(candidates) == 1:
-            return candidates.iloc[0]["Tipo_Interazione"]
-        # tie: choose channel with largest inter_count
-        max_count = candidates["inter_count"].max()
-        top = candidates[candidates["inter_count"] == max_count]
-        # if still tie, pick first in alphabetical order
-        return sorted(top["Tipo_Interazione"].tolist())[0]
+            return candidates.iloc[0]["tipo_interazione"]
 
-    best_channel = (
+        # Tie-break with interaction count
+        max_count = candidates["interaction_count"].max()
+        top = candidates[candidates["interaction_count"] == max_count]
+
+        # Final tie-break: alphabetical
+        return sorted(top["tipo_interazione"].tolist())[0]
+
+    best_channels = (
         channel_stats.groupby("codice_cliente")
-        .apply(pick_channel)
-        .reset_index(name="best_contact_channel")
+        .apply(pick_best_channel)
+        .reset_index(name="canale_migliore")
     )
-    # Merge best channel back
-    clients = clients.merge(best_channel, on="codice_cliente", how="left")
-    # Fill missing with 'N/A' for clients with no interactions
-    clients["best_contact_channel"] = clients["best_contact_channel"].fillna("N/A")
 
-    # Select final columns and write out
-    out_cols = list(clients.columns)
-    # Write final file
-    final_path = os.path.join(OUTPUT_DIR, "client_enhanced_nba.csv")
-    clients[out_cols].to_csv(final_path, index=False)
-
-    # Write cluster mix summary for transparency
-    mix_path = os.path.join(OUTPUT_DIR, "cluster_product_mix.csv")
-    cluster_mix.to_csv(mix_path, index=False)
-
-    return clients
+    return best_channels
 
 
-def main():
-    data = load_inputs()
-    _ = enhance_nba(data)
-    # Return path to the final file for sync
-    return os.path.join(OUTPUT_DIR, "client_enhanced_nba.csv"), os.path.join(
-        OUTPUT_DIR, "cluster_product_mix.csv"
-    )
+def write_to_database(
+    con: duckdb.DuckDBPyConnection, table_name: str, df: pd.DataFrame, schema: str = "analytics"
+) -> None:
+    """Write DataFrame to DuckDB with validation."""
+    validate_dataframe(df, f"Table {table_name}")
+
+    con.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+
+    full_table_name = f"{schema}.{table_name}"
+    con.execute(f"DROP TABLE IF EXISTS {full_table_name}")
+
+    con.register("temp_df", df)
+    con.execute(f"CREATE TABLE {full_table_name} AS SELECT * FROM temp_df")
+    con.unregister("temp_df")
+
+    row_count = con.execute(f"SELECT COUNT(*) FROM {full_table_name}").fetchone()[0]
+    if row_count != len(df):
+        raise ValueError(
+            f"Row count mismatch for {full_table_name}: expected {len(df)}, got {row_count}"
+        )
+
+
+def main() -> int:
+    """Execute cluster-aware NBA enhancement pipeline."""
+    try:
+        print("=" * 70)
+        print("CLUSTER-AWARE NBA ENHANCEMENT PIPELINE")
+        print("=" * 70)
+        print(f"Model version: {MODEL_VERSION}")
+        print(f"Database: {DB_PATH}")
+        print()
+
+        if not DB_PATH.exists():
+            raise ValueError(f"Database not found: {DB_PATH}")
+
+        con = duckdb.connect(str(DB_PATH))
+
+        # Load data
+        print("[1/6] Loading data from database...")
+        data = load_inputs(con)
+        print(f"      Loaded {len(data['customers']):,} customers")
+        print(f"      Loaded {len(data['clusters']):,} cluster assignments")
+
+        # Compute cluster product mix
+        print("[2/6] Computing cluster product preferences...")
+        cluster_mix = compute_cluster_product_mix(data["cluster_summary"])
+        product_ranking = compute_cluster_product_ranking(cluster_mix)
+
+        if cluster_mix.empty:
+            print("      ⚠ No cluster data available, skipping cluster-aware enhancements")
+            # Write basic NBA data
+            output = data["customers"].copy()
+            output["raccomandazione_nba_cluster"] = output["raccomandazione_nba"]
+            output["livello_urgenza_adjusted"] = output["livello_urgenza"]
+            output["cluster_id"] = -1
+        else:
+            print(f"      Computed preferences for {len(cluster_mix)} clusters")
+
+            # Assign single-product clusters
+            print("[3/6] Assigning clusters to single-product clients...")
+            customers_with_clusters = assign_single_product_clusters(
+                data["customers"], data["clusters"], cluster_mix, data["cluster_summary"]
+            )
+            assigned = (customers_with_clusters["cluster_id"] >= 0).sum()
+            print(f"      {assigned:,} customers have cluster assignments")
+
+            # Enhance NBA
+            print("[4/6] Enhancing NBA recommendations with cluster insights...")
+            customers_enhanced = enhance_nba_with_clusters(customers_with_clusters, product_ranking)
+
+            # Adjust urgency
+            print("[5/6] Adjusting urgency tiers by responsiveness...")
+            output = adjust_urgency_by_responsiveness(customers_enhanced, data["responder"])
+
+        # Determine best channels
+        print("[6/6] Determining best contact channels...")
+        best_channels = determine_best_channel(data["interactions"])
+        output = output.merge(best_channels, on="codice_cliente", how="left")
+        output["canale_migliore"] = output["canale_migliore"].fillna("N/A")
+        print(
+            f"      Determined channels for {(output['canale_migliore'] != 'N/A').sum():,} customers"
+        )
+
+        # Write output
+        print("\n[7/7] Writing enhanced NBA data to database...")
+        output_table = output[
+            [
+                "codice_cliente",
+                "cluster_id",
+                "raccomandazione_nba_cluster",
+                "livello_urgenza_adjusted",
+                "canale_migliore",
+            ]
+        ].copy()
+        output_table["versione_modello"] = MODEL_VERSION
+
+        write_to_database(con, "nba_enhanced", output_table)
+        print(f"      ✓ analytics.nba_enhanced ({len(output_table):,} rows)")
+
+        # Write cluster product mix
+        if not cluster_mix.empty:
+            cluster_mix_output = cluster_mix.copy()
+            cluster_mix_output["versione_modello"] = MODEL_VERSION
+            write_to_database(con, "cluster_product_mix", cluster_mix_output)
+            print(f"      ✓ analytics.cluster_product_mix ({len(cluster_mix_output)} rows)")
+
+        con.close()
+
+        print("\n" + "=" * 70)
+        print("✓ PIPELINE COMPLETED SUCCESSFULLY")
+        print("=" * 70)
+        return 0
+
+    except Exception as e:
+        print(f"\n✗ PIPELINE FAILED: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":
-    final_file, mix_file = main()
-    print("Generated:", final_file)
-    print("Cluster mix:", mix_file)
+    import sys
+
+    sys.exit(main())

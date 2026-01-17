@@ -396,3 +396,197 @@ models:
           - not_null
           - dbt_utils.expression_is_true:
               expression: ">= 0"
+
+  - name: int_customer_wealth_segments
+    description: >
+      Customer wealth and demographic segmentation. Calculates total wealth from income
+      and assets, assigns value segments based on quartiles, and determines life stage
+      based on age and family status. One row per customer.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: patrimonio_totale
+        description: Total wealth (income + financial assets + real estate)
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: segmento_valore
+        description: Value segment based on wealth quartiles
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Upper-Retail', 'Mid-Retail', 'Entry-Retail']
+
+      - name: fase_vita
+        description: Life stage based on age and family composition
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Young Single', 'Young Family', 'Young Professional', 'Established Family', 'Established Professional', 'Pre-Retirement', 'Retired']
+
+  - name: int_customer_product_ownership
+    description: >
+      Product ownership flags and counts for each customer. Identifies which major
+      product categories (Casa, Salute, Investimento, PIP) each customer owns.
+      One row per customer.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: possiede_casa
+        description: Binary flag - owns Casa (home) insurance product
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_salute
+        description: Binary flag - owns Salute (health) insurance product
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_investimento
+        description: Binary flag - owns Investimento (investment) product
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: possiede_pip
+        description: Binary flag - owns PIP (pension) product
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: num_prodotti_posseduti
+        description: Total count of major product categories owned
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 4
+
+  - name: int_customer_engagement_metrics
+    description: >
+      Customer engagement, behavioral, and risk metrics. Combines engagement scores,
+      interaction history, claims, and complaints data. Calculates urgency tiers
+      and engagement levels. One row per customer.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: giorni_ultima_visita
+        description: Days since last customer visit
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: livello_urgenza
+        description: Urgency tier based on recency of contact
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
+
+      - name: livello_engagement
+        description: Customer engagement classification
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Champion', 'Neutral', 'At-Risk']
+
+      - name: num_interazioni
+        description: Total count of customer interactions
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_sinistri
+        description: Total count of claims filed
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: num_reclami
+        description: Total count of complaints filed
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: int_customer_strategic_segment
+    description: >
+      Strategic customer segmentation with NBA recommendations. Combines wealth,
+      demographics, product ownership, and engagement to assign strategic segments
+      and generate Next Best Action recommendations. One row per customer.
+      This is the primary intermediate model for analytics processing.
+    columns:
+      - name: codice_cliente
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_clienti')
+              field: codice_cliente
+
+      - name: segmento_strategico
+        description: Strategic segment assignment based on value, life stage, and behavior
+        tests:
+          - not_null
+
+      - name: raccomandazione_nba
+        description: Next Best Action recommendation (product or retention)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Casa', 'Salute', 'Investimento', 'PIP', 'Casa+Salute', 'Casa+Salute+PIP', 'Retention']
+
+      - name: segmento_valore
+        description: Value segment
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Upper-Retail', 'Mid-Retail', 'Entry-Retail']
+
+      - name: fase_vita
+        description: Life stage
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Young Single', 'Young Family', 'Young Professional', 'Established Family', 'Established Professional', 'Pre-Retirement', 'Retired']
+
+      - name: num_prodotti_posseduti
+        description: Count of major product categories owned
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 4

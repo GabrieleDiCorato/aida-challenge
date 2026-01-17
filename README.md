@@ -36,7 +36,12 @@ uv run load-raw-data
 
 # 4. Run dbt transformations
 uv run dbt-build
+
+# 5. Run analytics pipeline (clustering + NBA enhancement)
+uv run python -m aida_challenge.analytics.run_analytics_pipeline
 ```
+
+> **📋 For complete analytics pipeline documentation**, see [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)
 
 #### Alternative: Standard dbt Profiles Location
 For a more production-ready setup, you can use the standard dbt profiles location:
