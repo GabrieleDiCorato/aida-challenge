@@ -505,16 +505,11 @@ def main():
                     random.seed(customer_id)
                     is_email = random.choice([True, False])
 
-                    if is_email:
-                        contatto = generate_fake_email(row["full_name"], customer_id)
-                    else:
-                        contatto = generate_fake_phone(customer_id)
-
                     display_data.append(
                         {
                             "Cliente": row["full_name"],
-                            "Priorità": f"{urgency_emoji} {row['livello_urgenza']}",
-                            "Contatto": contatto,
+                            "Priorità": urgency_emoji,
+                            "Contatto": "📧" if is_email else "📞",
                             "Prodotto": (
                                 row["raccomandazione_nba"][:20] + "..."
                                 if len(row["raccomandazione_nba"]) > 20
