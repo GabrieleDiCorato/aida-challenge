@@ -1,3 +1,9 @@
+"""
+Generate personalized sales pitches for customers based on their data.
+This script simulates cached pitches for development and debugging purposes.
+It is not intended for production use.
+"""
+
 import csv
 import random
 
