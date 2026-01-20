@@ -6,10 +6,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
-import sys
-
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from aida_challenge.streamlit_app.utils import (
     load_customer_demographics,

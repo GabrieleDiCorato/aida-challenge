@@ -11,17 +11,18 @@ import streamlit as st
 import pandas as pd
 import random
 from pathlib import Path
-import sys
-
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from aida_challenge.streamlit_app.utils import (
     get_customer_full_profile,
     get_nba_recommendations,
     load_cached_pitches,
 )
 from aida_challenge.agents import generate_sales_pitch, SalesPitch
+
+
+# Constants
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
+DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
+
 
 # Page configuration
 st.set_page_config(
@@ -129,8 +130,21 @@ PRODUCT_INFO = {
     "Vita Risparmio Costante": {
         "type": "Assicurazione Vita",
         "area": "Risparmio e Investimento",
-        "description": "Piano di accumulo con versamenti programmati e protezione caso morte.",
+        "description": "Polizza di risparmio con premi ricorrenti e protezione caso morte.",
     },
+}
+
+# Mapping products to document filenames
+PRODUCT_DOCS = {
+    "Casa": "Assicurazione_Casa_Serena.md",
+    "Casa Serena": "Assicurazione_Casa_Serena.md",
+    "Pip": "PIP_Pensione_Serenita.md",
+    "PIP": "PIP_Pensione_Serenita.md",
+    "PIP Pensione Serenità": "PIP_Pensione_Serenita.md",
+    "Salute": "Polizza_Salute_Protetta.md",
+    "Salute Protetta": "Polizza_Salute_Protetta.md",
+    "Vita Futuro Sicuro": "Polizza_Vita_Futuro_Sicuro.md",
+    "Vita Risparmio Costante": "Polizza_Vita_Risparmio_Costante.md",
 }
 
 
@@ -572,11 +586,6 @@ def main():
             st.exception(e)
             return
 
-        except Exception as e:
-            st.error(f"Errore caricamento raccomandazioni NBA: {str(e)}")
-            st.exception(e)
-            return
-
     # Main content area
     if "selected_nba_data" in st.session_state:
         nba_data = st.session_state["selected_nba_data"]
@@ -602,7 +611,7 @@ def main():
 
             with col_left:
                 # NBA Context card
-                st.markdown("### 🎯 Contesto NBA")
+                st.markdown("### 🎯 Next Best Action Recommendation")
 
                 # Create structured NBA info table
                 urgency_emoji = {
@@ -627,12 +636,95 @@ def main():
                 # Contact channel info from session state
                 contact_info = st.session_state.get("contact_info", "N/A")
 
+                # Recommended Products with Popovers for contract details
+                rec_col1, rec_col2, _ = st.columns([1, 2, 1])
+                with rec_col1:
+                    st.info("**Prodotti Raccomandati:**")
+
+                with rec_col2:
+                    # Parse products (handle multiple products separated by +)
+                    recommended_products = [
+                        p.strip() for p in nba_data["raccomandazione_nba"].split("+")
+                    ]
+
+                    # Create columns for multiple popovers if needed
+                    pop_cols = st.columns(len(recommended_products))
+
+                    for i, product in enumerate(recommended_products):
+                        with pop_cols[i]:
+                            doc_filename = PRODUCT_DOCS.get(product)
+                            if doc_filename:
+                                with st.popover(f"📄 {product}", use_container_width=True):
+                                    # Injected CSS for larger popover and layout stability
+                                    st.markdown(
+                                        """
+                                        <style>
+                                            /* Make popover much larger */
+                                            div[data-testid="stPopoverBody"] {
+                                                min-width: 80vw !important;
+                                                max-height: 85vh !important;
+                                            }
+                                            /* Ensure columns take full height if needed */
+                                            div[data-testid="column"] {
+                                                height: 100%;
+                                            }
+                                        </style>
+                                        """,
+                                        unsafe_allow_html=True,
+                                    )
+
+                                    st.markdown(f"## 📄 {product}")
+                                    p_col1, p_col2 = st.columns([1.5, 1])
+
+                                    with p_col1:
+                                        st.markdown("### 📋 Contratto")
+                                        # Use a scrollable container for the contract text
+                                        with st.container(height=600):
+                                            try:
+                                                with open(
+                                                    DOCUMENTS_DIR / doc_filename,
+                                                    "r",
+                                                    encoding="utf-8",
+                                                ) as f:
+                                                    content = f.read()
+                                                    st.markdown(content)
+                                            except Exception as e:
+                                                st.error(f"Errore caricamento documento: {e}")
+
+                                    with p_col2:
+                                        st.markdown("### 🤖 Assistente AI (Demo)")
+                                        st.caption(f"Chiedi dettagli sulla polizza {product}")
+
+                                        chat_key = f"chat_{selected_customer_id}_{product}"
+                                        if chat_key not in st.session_state:
+                                            st.session_state[chat_key] = [
+                                                {
+                                                    "role": "assistant",
+                                                    "content": f"Ciao! Sono l'assistente virtuale per la polizza {product}. Come posso aiutarti oggi?",
+                                                }
+                                            ]
+
+                                        chat_container = st.container(height=400)
+                                        with chat_container:
+                                            for msg in st.session_state[chat_key]:
+                                                with st.chat_message(msg["role"]):
+                                                    st.markdown(msg["content"])
+
+                                        if prompt := st.chat_input(
+                                            "Scrivi qui...",
+                                            key=f"input_{selected_customer_id}_{product}",
+                                        ):
+                                            st.session_state[chat_key].append(
+                                                {"role": "user", "content": prompt}
+                                            )
+                                            response = f"Questa è una risposta di esempio per {product}. In produzione, questo chatbot utilizzerà il contenuto del contratto per rispondere alle tue domande."
+                                            st.session_state[chat_key].append(
+                                                {"role": "assistant", "content": response}
+                                            )
+                                            st.rerun()
+
                 nba_info = pd.DataFrame(
                     [
-                        {
-                            "Campo": "Prodotto Raccomandato",
-                            "Valore": f"🎯 {nba_data['raccomandazione_nba']}",
-                        },
                         {
                             "Campo": "Livello Urgenza",
                             "Valore": f"{urgency_emoji} {nba_data['livello_urgenza']}",

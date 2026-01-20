@@ -6,11 +6,9 @@ contract sections for the sales pitch.
 """
 
 import os
-from pathlib import Path
-import sys
 
 # Import the search function from embeddings module
-from embeddings.embed_documents import search_similar_chunks
+from aida_challenge.embeddings.embed_documents import search_similar_chunks
 
 from dotenv import load_dotenv
 from google.adk.agents.llm_agent import LlmAgent
@@ -18,8 +16,6 @@ from google.adk.models.lite_llm import LiteLlm
 from google.adk.tools.function_tool import FunctionTool
 
 load_dotenv()
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def search_product_documents(query: str, product_name: str, top_k: int = 5) -> str:
