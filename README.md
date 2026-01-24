@@ -1,19 +1,47 @@
 # AIDA Challenge
 
+**⚠️ NOTE: This project was developed as part of a quick Hackathon/Challenge in a university setting. It is currently archived and no longer maintained.**
+
 A data analytics project for exploring and extracting insights from insurance company data using modern data engineering tools.
 
 ## Project Overview
 
-This project contains analytics pipelines for an insurance dataset, leveraging:
+The goal of this project is to build a solution to a concrete business problem: assisting an insurance company's sales network in implementing data-driven business strategies.
 
-- **DuckDB** for efficient analytical queries
-- **dbt** for data transformation and modeling
-- **Streamlit** to create a P.o.C. interactive dashboard
-- **Google Agent Development Kit** to orchestrate Ai agents
-- **UV** for fast Python dependency management
-- **Jupyter** for exploratory data analysis
+We deliver this through:
+- **Sales Assistant Dashboard**: A Streamlit-based tool for agents to manage customer relationships and generate AI-powered personalized pitches.
+- **Next Best Action Engine**: A logic-driven recommendation system to prioritize customer outreach.
+- **Executive Insights**: Strategical insights for monitoring network performance (provided via separate PowerBI).
 
-The goal is to explore data, identify insights, and build reproducible pipelines.
+## Business Features
+
+### Next Best Action (NBA) Engine
+- **Priority-Ordered Customer List**: Customers ranked by urgency (CRITICAL, HIGH, MEDIUM, LOW) and CLV.
+- **Smart Recommendations**: Product suggestions based on customer segmentation, gaps in portfolio, and conversion probability.
+- **Strategic Insights**: Shows pitch strategy (Ready to Pitch, Retention First, Nurture & Pitch, Monitor).
+- **Portfolio Analysis**: Visual display of current product ownership and gap analysis.
+- **Conversion Rate Forecasts**: NBA-specific conversion rates for recommended products.
+
+### AI-Powered Pitch Generation (Sales Assistant)
+- **Customer 360° View**: Complete customer profile with demographics, policies, interactions, and claims.
+- **Multi-Agent System**: Sequential workflow using a Customer Analyst, RAG Agent, and Pitch Generator.
+- **RAG-Powered**: Retrieves relevant contract sections from document embeddings for precise product information.
+- **Structured Output**: Generates personalized pitches in Italian with selling points, objection handling, and next steps.
+
+### Interactive Dashboard
+- **Data Exploration**: Visualizations of customer demographics, policy distributions, and geographic trends.
+- **Filters and Controls**: Focus on specific urgency levels, strategy types, and real-time portfolio stats.
+
+## Technical Stack
+
+This project leverages a modern data engineering and AI stack:
+
+- **DuckDB**: Efficient analytical queries and Vector Similarity Search (VSS).
+- **dbt**: Data transformation, modeling, and quality testing.
+- **Streamlit**: Interactive user interface and dashboarding.
+- **Google Agent Development Kit**: Orchestration of multi-agent AI workflows.
+- **UV**: Fast Python dependency and environment management.
+- **Jupyter**: Exploratory data analysis and prototyping.
 
 ## Quick Start
 
@@ -54,6 +82,15 @@ cp src/aida_challenge/dbt_project/profiles.yml.example ~/.dbt/profiles.yml
 # Check dbt connection
 uv run dbt-debug
 ```
+
+### AI Features Setup
+To use the AI-powered Sales Assistant:
+1. **API Key**: Obtain an OpenRouter API key from [OpenRouter](https://openrouter.ai/keys).
+2. **Environment**: Copy `.env.example` to `.env` and add your key: `OPENROUTER_API_KEY=your_key_here`.
+3. **Embeddings**: Generate document embeddings (required once):
+   ```bash
+   uv run embed-documents
+   ```
 
 ### Dependency Management
 
@@ -124,10 +161,6 @@ uv run streamlit-app
 uv run --extra dashboard streamlit run src/aida_challenge/streamlit_app/app.py
 ```
 
-The dashboard includes:
-- **Data Exploration**: Interactive visualizations of customer demographics, policies, and geographic distribution
-- **Sales Assistant**: AI-powered pitch generation with Next Best Action recommendations (see below)
-
 ### Code Quality
 
 ```bash
@@ -143,78 +176,6 @@ uv run mypy src
 # Run tests
 uv run pytest
 ```
-
-### Sales Assistant with Next Best Action (NBA) Recommendations
-
-The Sales Assistant uses AI to generate personalized sales pitches, integrated with a data-driven Next Best Action recommendation engine.
-
-#### Setup
-
-1. **Get an OpenRouter API Key** (free) from [OpenRouter](https://openrouter.ai/keys)
-
-2. **Configure environment**:
-```bash
-# Copy example env file
-cp .env.example .env
-
-# Edit .env and add your OpenRouter API key
-OPENROUTER_API_KEY=your_key_here
-```
-
-3. **Generate document embeddings** (required once):
-```bash
-uv run embed-documents
-```
-
-4. **Run the complete dashboard** (recommended):
-```bash
-uv run streamlit-app
-```
-
-Then navigate to the **Sales Chatbot** page from the sidebar.
-
-# Features
-
-## Next Best Action Engine
-- **Priority-Ordered Customer List**: Customers ranked by urgency (CRITICAL, HIGH, MEDIUM, LOW) and CLV
-- **Smart Recommendations**: Product recommendations based on customer segmentation, gaps in portfolio, and conversion probability
-- **Strategic Insights**: Shows pitch strategy (Ready to Pitch, Retention First, Nurture & Pitch, Monitor)
-- **Portfolio Analysis**: Visual display of current product ownership and gap analysis
-- **Conversion Rate Forecasts**: NBA-specific conversion rates for recommended products
-
-## AI-Powered Pitch Generation
-- **Customer 360° View**: Complete customer profile with demographics, policies, interactions, claims
-- **Multi-Agent System**: Uses Google ADK with OpenRouter's **DeepSeek R1** (free) for intelligent pitch generation
-- **RAG-Powered**: Retrieves relevant contract sections using vector similarity search (DuckDB VSS)
-- **Structured Output**: Generates pitches with customer summary, selling points, objection handling, and next steps
-- **Personalized Context**: Incorporates NBA insights and customer history into pitch generation
-
-## How It Works
-
-### NBA Recommendation Flow
-1. The system loads pre-computed recommendations from `mart_nba_recommendations`
-2. Customers are displayed in priority order based on:
-   - **Urgency Level**: CRITICAL > HIGH > MEDIUM > LOW
-   - **Customer Lifetime Value (CLV)**: Higher CLV customers prioritized within each urgency tier
-3. Each recommendation includes:
-   - Suggested product to pitch
-   - Strategic pitch approach
-   - Expected conversion rate
-   - Current product portfolio gaps
-
-### AI Pitch Generation
-The system uses a sequential multi-agent workflow:
-1. **Customer Analyst Agent** - Analyzes the customer profile to identify needs and opportunities
-2. **RAG Agent** - Retrieves relevant product contract sections from embedded documents
-3. **Pitch Generator Agent** - Creates a personalized sales pitch in Italian, incorporating NBA context
-
-### Filters and Controls
-
-The Sales Assistant provides:
-- **Urgency Filter**: Focus on specific urgency levels
-- **Strategy Filter**: Filter by pitch strategy type
-- **Real-time Stats**: Customer count, conversion rates, and portfolio information
-- **One-Click Generation**: Generate personalized pitches with a single button
 
 ## Development Workflow
 
